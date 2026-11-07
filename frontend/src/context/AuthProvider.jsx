@@ -13,8 +13,8 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  const register = async (userData) => {
-    const data = await authService.register(userData);
+  const setupOwner = async (userData) => {
+    const data = await authService.setupOwner(userData);
     setUser(data.user);
     return data;
   };
@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     login,
-    register,
+    setupOwner,
     logout,
     isAuthenticated: !!user,
     loading: false,

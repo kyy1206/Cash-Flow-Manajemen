@@ -11,16 +11,16 @@ class CategoryControllerTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    public function test_category_owned_by_another_user_is_not_found_for_read_or_write(): void
+    public function test_staff_can_read_business_categories_but_cannot_manage_them(): void
     {
         $owner = User::factory()->create();
-        $otherUser = User::factory()->create();
+        $otherUser = User::factory()->create(['role' => 'staff']);
         $category = $owner->categories()->create(['name' => 'Private category']);
         Sanctum::actingAs($otherUser);
 
-        $this->getJson("/api/categories/{$category->id}")->assertNotFound();
-        $this->putJson("/api/categories/{$category->id}", ['name' => 'Changed'])->assertNotFound();
-        $this->deleteJson("/api/categories/{$category->id}")->assertNotFound();
+        $this->getJson("/api/categories/{$category->id}")->assertOk();
+        $this->putJson("/api/categories/{$category->id}", ['name' => 'Changed'])->assertForbidden();
+        $this->deleteJson("/api/categories/{$category->id}")->assertForbidden();
 
         $this->assertDatabaseHas('categories', [
             'id' => $category->id,
@@ -39,6 +39,7 @@ class CategoryControllerTest extends TestCase
             'icon' => 'car',
             'color' => '#0f766e',
             'description' => 'Biaya perjalanan harian',
+            'type' => 'expense',
         ])->assertCreated()
             ->assertJsonPath('data.icon', 'car')
             ->assertJsonPath('data.color', '#0f766e');
@@ -53,13 +54,13 @@ class CategoryControllerTest extends TestCase
             ->assertJsonPath('data.icon', 'bus');
     }
 
-    public function test_category_name_must_be_unique_per_user(): void
+    public function test_category_name_must_be_unique_for_the_business(): void
     {
         $user = User::factory()->create();
         $user->categories()->create(['name' => 'Makan']);
         Sanctum::actingAs($user);
 
-        $this->postJson('/api/categories', ['name' => 'Makan'])
+        $this->postJson('/api/categories', ['name' => 'Makan', 'type' => 'expense'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('name');
     }
@@ -88,6 +89,7 @@ class CategoryControllerTest extends TestCase
 
         $this->postJson('/api/categories', [
             'name' => 'Custom',
+            'type' => 'expense',
             'color' => 'red; background:url(x)',
         ])->assertUnprocessable()
             ->assertJsonValidationErrors('color');

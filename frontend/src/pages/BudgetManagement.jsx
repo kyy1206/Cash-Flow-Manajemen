@@ -44,7 +44,7 @@ const SharedSidebar = ({ user, onLogout, loadingLogout, active }) => (
     <Link to="/dashboard" className="finance-nav-link"><span>⌂</span> Dashboard</Link>
     <Link to="/expenses" className="finance-nav-link"><span>↕</span> Pengeluaran</Link>
     <Link to="/budgets" className={`finance-nav-link ${active === 'budgets' ? 'active' : ''}`} aria-current={active === 'budgets' ? 'page' : undefined}><span>▤</span> Budget</Link>
-    <Link to="/categories" className={`finance-nav-link ${active === 'categories' ? 'active' : ''}`} aria-current={active === 'categories' ? 'page' : undefined}><span>＋</span> Kategori</Link>
+    {user?.role === 'owner' && <Link to="/categories" className={`finance-nav-link ${active === 'categories' ? 'active' : ''}`} aria-current={active === 'categories' ? 'page' : undefined}><span>＋</span> Kategori</Link>}
     <Link to="/subscriptions" className="finance-nav-link"><span>↻</span> Subscription</Link>
     <Link to="/reports" className="finance-nav-link"><span>▥</span> Laporan</Link>
     <Link to="/notifications" className="finance-nav-link"><span>♧</span> Notifikasi</Link>
@@ -104,6 +104,7 @@ const AllocationForm = ({ allocation, categories, saving, error, onCancel, onSub
 
 const BudgetManagement = () => {
   const { user, logout } = useAuth();
+  const isOwner = user?.role === 'owner';
   const navigate = useNavigate();
   const [period, setPeriod] = useState(getCurrentPeriod);
   const [plan, setPlan] = useState(null);
@@ -263,7 +264,7 @@ const BudgetManagement = () => {
               Periode
               <input type="month" aria-label="Periode budget" value={period} onChange={(event) => setPeriod(event.target.value)} />
             </label>
-            <Link className="finance-button secondary" to="/categories">Kelola Kategori</Link>
+            {isOwner && <Link className="finance-button secondary" to="/categories">Kelola Kategori</Link>}
             <span className="finance-avatar">{user?.name?.[0] ?? 'U'}</span>
           </div>
         </header>
@@ -272,9 +273,11 @@ const BudgetManagement = () => {
           <div>
             <span className="finance-eyebrow">RENCANA KEUANGAN</span>
             <h1>Manajemen Budget Bulanan</h1>
-            <p>Atur rencana pengeluaran dan alokasi budget kategori agar pengeluaran tetap terkendali.</p>
+            <p>{isOwner
+              ? 'Atur rencana pengeluaran dan alokasi budget kategori agar pengeluaran tetap terkendali.'
+              : 'Pantau rencana pengeluaran dan alokasi budget kategori usaha.'}</p>
           </div>
-          <Link className="finance-button secondary" to="/categories">＋ Tambah Kategori</Link>
+          {isOwner && <Link className="finance-button secondary" to="/categories">＋ Tambah Kategori</Link>}
         </section>
 
         {error && <div className="finance-error finance-page-message" role="alert">{error}</div>}
@@ -289,7 +292,7 @@ const BudgetManagement = () => {
                 <h2>Rencana pengeluaran {periodLabel}</h2>
                 <p>Tentukan batas pengeluaran bulanan untuk memantau sisa budget dan mencegah kebocoran.</p>
               </div>
-              {editingTarget || !plan ? (
+              {(editingTarget || !plan) && isOwner ? (
                 <form className="finance-target-form" onSubmit={savePlan}>
                   <label className="finance-field">
                     Target budget
@@ -298,24 +301,28 @@ const BudgetManagement = () => {
                   {plan && <button type="button" className="finance-button secondary" onClick={() => setEditingTarget(false)}>Batal</button>}
                   <button type="submit" className="finance-button primary" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan Target'}</button>
                 </form>
-              ) : (
+              ) : plan ? (
                 <div className="finance-plan-value">
                   <span>Total rencana pengeluaran</span>
                   <strong>{formatCurrency(totalBudget)}</strong>
-                  <button type="button" className="finance-button secondary" onClick={() => setEditingTarget(true)}>Ubah Target</button>
+                  {isOwner && <button type="button" className="finance-button secondary" onClick={() => setEditingTarget(true)}>Ubah Target</button>}
                 </div>
-              )}
+              ) : null}
             </section>
 
             {!plan && (
-              <div className="finance-notice finance-page-message">Belum ada target untuk {periodLabel}. Simpan target bulanan untuk mulai membuat alokasi.</div>
+              <div className="finance-notice finance-page-message">
+                {isOwner
+                  ? `Belum ada target untuk ${periodLabel}. Simpan target bulanan untuk mulai membuat alokasi.`
+                  : `Belum ada target budget untuk ${periodLabel}.`}
+              </div>
             )}
 
             <div className="finance-management-grid">
               <section className="finance-allocation-section">
                 <header className="finance-section-header">
                   <div><span className="finance-eyebrow">ALOKASI PENGELUARAN</span><h2>Alokasi Budget</h2><p>Rincian batas pengeluaran untuk tiap kategori.</p></div>
-                  <button
+                  {isOwner && <button
                     type="button"
                     className="finance-button primary"
                     disabled={!plan || availableCategories.length === 0}
@@ -325,7 +332,7 @@ const BudgetManagement = () => {
                     }}
                   >
                     ＋ Tambah Kategori
-                  </button>
+                  </button>}
                 </header>
 
                 {budgets.length > 0 ? (
@@ -355,13 +362,13 @@ const BudgetManagement = () => {
                               <span className={`finance-status ${status.tone}`}>{status.label}</span>
                             </div>
                           </div>
-                          <div className="finance-allocation-actions">
+                          {isOwner && <div className="finance-allocation-actions">
                             <button type="button" title="Ubah alokasi" aria-label={`Ubah budget ${category.name}`} onClick={() => {
                               setFormError('');
                               setAllocationForm({ allocation: budget });
                             }}>✎</button>
                             <button type="button" className="danger" title="Hapus alokasi" aria-label={`Hapus budget ${category.name}`} onClick={() => deleteAllocation(budget)}>⌫</button>
-                          </div>
+                          </div>}
                         </article>
                       );
                     })}
@@ -370,7 +377,7 @@ const BudgetManagement = () => {
                   <div className="finance-empty-state">
                     <span>▤</span><strong>Belum ada alokasi budget</strong>
                     <p>Buat kategori, lalu tentukan alokasi budget agar pengeluaran dapat dipantau.</p>
-                    <Link className="finance-button secondary" to="/categories">Kelola Kategori</Link>
+                    {isOwner && <Link className="finance-button secondary" to="/categories">Kelola Kategori</Link>}
                   </div>
                 )}
               </section>

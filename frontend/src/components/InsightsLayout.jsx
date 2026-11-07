@@ -8,6 +8,23 @@ const InsightsLayout = ({ active, title, eyebrow, children }) => {
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState('');
+  const navigation = [
+    { to: '/dashboard', text: 'Dashboard', icon: '⌂', roles: ['owner', 'supervisor', 'staff'] },
+    { to: '/transactions', text: 'Transaksi', icon: '↕', roles: ['owner', 'supervisor', 'staff'] },
+    { to: '/requests', text: 'Pengajuan', icon: '▣', roles: ['owner', 'supervisor', 'staff'] },
+    { to: '/wallets', text: 'Kas & Rekening', icon: '▤', roles: ['owner', 'supervisor', 'staff'] },
+    { to: '/debts', text: 'Utang & Piutang', icon: '⇄', roles: ['owner', 'supervisor', 'staff'] },
+    { to: '/reconciliations', text: 'Rekonsiliasi', icon: '✓', roles: ['owner', 'supervisor', 'staff'] },
+    { to: '/reports', text: 'Laporan', icon: '▥', roles: ['owner', 'supervisor', 'staff'] },
+    { to: '/budgets', text: 'Anggaran', icon: '◫', roles: ['owner', 'supervisor'] },
+    { to: '/categories', text: 'Kategori', icon: '＋', roles: ['owner'] },
+    { to: '/users', text: 'Pengguna', icon: '♙', roles: ['owner'] },
+    { to: '/settings', text: 'Pengaturan', icon: '⚙', roles: ['owner'] },
+    { to: '/audit', text: 'Audit Trail', icon: '≡', roles: ['owner'] },
+    { to: '/subscriptions', text: 'Subscription', icon: '↻', roles: ['owner', 'supervisor', 'staff'] },
+    { to: '/notifications', text: 'Notifikasi', icon: '♧', roles: ['owner', 'supervisor', 'staff'] },
+    { to: '/profile', text: 'Profil & Keamanan', icon: '⚿', roles: ['owner', 'supervisor', 'staff'] },
+  ].filter((item) => item.roles.includes(user?.role));
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -30,13 +47,16 @@ const InsightsLayout = ({ active, title, eyebrow, children }) => {
           <span><strong>Bocor Halus</strong><small>PERSONAL FINANCE</small></span>
         </Link>
         <nav className="dashboard-nav">
-          <Link to="/dashboard" className="dashboard-nav-link"><span>⌂</span> Dashboard</Link>
-          <Link to="/expenses" className="dashboard-nav-link"><span>↕</span> Pengeluaran</Link>
-          <Link to="/budgets" className="dashboard-nav-link"><span>▤</span> Budget</Link>
-          <Link to="/categories" className="dashboard-nav-link"><span>＋</span> Kategori</Link>
-          <Link to="/subscriptions" className="dashboard-nav-link"><span>↻</span> Subscription</Link>
-          <Link to="/reports" className={`dashboard-nav-link ${active === 'reports' ? 'active' : ''}`} aria-current={active === 'reports' ? 'page' : undefined}><span>▥</span> Laporan</Link>
-          <Link to="/notifications" className={`dashboard-nav-link ${active === 'notifications' ? 'active' : ''}`} aria-current={active === 'notifications' ? 'page' : undefined}><span>♧</span> Notifikasi</Link>
+          {navigation.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={`dashboard-nav-link ${active === item.to.slice(1) ? 'active' : ''}`}
+              aria-current={active === item.to.slice(1) ? 'page' : undefined}
+            >
+              <span>{item.icon}</span> {item.text}
+            </Link>
+          ))}
         </nav>
         <div className="dashboard-sidebar-spacer" />
         <div className="dashboard-user">

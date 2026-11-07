@@ -8,7 +8,20 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model
 {
-    protected $fillable = ['user_id', 'name', 'icon', 'color', 'description'];
+    protected $fillable = [
+        'user_id',
+        'name',
+        'icon',
+        'color',
+        'description',
+        'type',
+        'requires_approval',
+    ];
+
+    protected function casts(): array
+    {
+        return ['requires_approval' => 'boolean'];
+    }
 
     public function user(): BelongsTo
     {

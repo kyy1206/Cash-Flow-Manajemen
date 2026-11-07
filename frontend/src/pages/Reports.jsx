@@ -83,6 +83,11 @@ const Reports = () => {
 
         {!loading && report && (
           <>
+            <p className="report-insight">
+              {report.scope === 'own_activity'
+                ? 'Laporan ini hanya menampilkan transaksi yang Anda catat. Target anggaran yang ditampilkan adalah target bersama usaha.'
+                : 'Laporan ini mencakup transaksi seluruh usaha.'}
+            </p>
             <section className="report-summary-grid" aria-label="Ringkasan laporan">
               <article className="report-summary-card"><span>Total pengeluaran tahunan</span><strong>{currency(report.summary.year_total)}</strong><small>Tahun {year}</small></article>
               <article className="report-summary-card"><span>Rata-rata bulanan</span><strong>{currency(report.summary.monthly_average)}</strong><small>Rata-rata 12 bulan</small></article>

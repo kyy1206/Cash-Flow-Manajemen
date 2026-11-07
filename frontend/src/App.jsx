@@ -3,11 +3,11 @@ import { AuthProvider } from './context/AuthProvider';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
+import BusinessDashboard from './pages/BusinessDashboard';
+import BusinessWorkspace from './pages/BusinessWorkspace';
 import Subscriptions from './pages/Subscriptions';
 import BudgetManagement from './pages/BudgetManagement';
 import CategoryManagement from './pages/CategoryManagement';
-import Expenses from './pages/Expenses';
 import Reports from './pages/Reports';
 import NotificationHistory from './pages/NotificationHistory';
 import './App.css';
@@ -18,37 +18,39 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/setup" element={<Register />} />
+          <Route path="/register" element={<Navigate to="/setup" replace />} />
           <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <BusinessDashboard />
               </ProtectedRoute>
             }
           />
+          {['transactions', 'wallets', 'requests', 'debts', 'reconciliations', 'users', 'settings', 'audit', 'profile'].map((path) => (
+            <Route
+              key={path}
+              path={`/${path}`}
+              element={<ProtectedRoute><BusinessWorkspace /></ProtectedRoute>}
+            />
+          ))}
           <Route
             path="/expenses"
             element={
-              <ProtectedRoute>
-                <Expenses />
-              </ProtectedRoute>
+              <Navigate to="/transactions" replace />
             }
           />
           <Route
             path="/expenses/manual"
             element={
-              <ProtectedRoute>
-                <Expenses />
-              </ProtectedRoute>
+              <Navigate to="/transactions" replace />
             }
           />
           <Route
             path="/expenses/ocr"
             element={
-              <ProtectedRoute>
-                <Expenses />
-              </ProtectedRoute>
+              <Navigate to="/transactions" replace />
             }
           />
           <Route
@@ -62,7 +64,7 @@ function App() {
           <Route
             path="/budgets"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={['owner', 'supervisor']}>
                 <BudgetManagement />
               </ProtectedRoute>
             }
@@ -70,7 +72,7 @@ function App() {
           <Route
             path="/categories"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={['owner']}>
                 <CategoryManagement />
               </ProtectedRoute>
             }
@@ -91,8 +93,8 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

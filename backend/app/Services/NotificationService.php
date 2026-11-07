@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Notification;
+use App\Models\Transaction;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 
@@ -21,8 +22,9 @@ class NotificationService
 
         $start = CarbonImmutable::create($year, $month, 1)->toDateString();
         $end = CarbonImmutable::create($year, $month, 1)->endOfMonth()->toDateString();
-        $spent = (float) $user->transactions()
-            ->where('status', 'completed')
+        $spent = (float) Transaction::query()
+            ->where('financial_status', 'posted')
+            ->where('transaction_type', 'expense')
             ->whereBetween('date', [$start, $end])
             ->sum('amount');
 
@@ -34,18 +36,20 @@ class NotificationService
             (float) $plan->total_budget,
         );
 
-        $budgets = $plan->budgets()->with('category')->withSum([
-            'transactions as spent_amount' => fn ($query) => $query
-                ->where('status', 'completed')
-                ->whereBetween('date', [$start, $end]),
-        ], 'amount')->get();
+        $budgets = $plan->budgets()->with('category')->get();
 
         foreach ($budgets as $budget) {
+            $spentAmount = (float) Transaction::query()
+                ->where('category_id', $budget->category_id)
+                ->where('financial_status', 'posted')
+                ->where('transaction_type', 'expense')
+                ->whereBetween('date', [$start, $end])
+                ->sum('amount');
             $this->createThresholdAlerts(
                 $user,
                 "budget:{$budget->id}:{$year}-{$month}",
                 $budget->category->name,
-                (float) ($budget->spent_amount ?? 0),
+                $spentAmount,
                 (float) $budget->amount,
             );
         }

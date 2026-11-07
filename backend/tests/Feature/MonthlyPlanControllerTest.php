@@ -44,10 +44,10 @@ class MonthlyPlanControllerTest extends TestCase
         ]);
     }
 
-    public function test_monthly_plan_from_another_user_is_not_found(): void
+    public function test_staff_cannot_read_the_shared_business_monthly_plan(): void
     {
         $owner = User::factory()->create();
-        $otherUser = User::factory()->create();
+        $otherUser = User::factory()->create(['role' => 'staff']);
         $plan = $owner->monthlyPlans()->create([
             'month' => 10,
             'year' => 2026,
@@ -55,7 +55,7 @@ class MonthlyPlanControllerTest extends TestCase
         ]);
         Sanctum::actingAs($otherUser);
 
-        $this->getJson("/api/monthly-plans/{$plan->id}")->assertNotFound();
+        $this->getJson("/api/monthly-plans/{$plan->id}")->assertForbidden();
     }
 
     public function test_plan_target_cannot_be_lowered_below_category_allocations(): void

@@ -4,10 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Budget;
+use App\Models\Category;
+use App\Models\MonthlyPlan;
+use App\Models\Transaction;
 use App\Services\NotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class BudgetController extends Controller
@@ -18,18 +22,21 @@ class BudgetController extends Controller
             'monthly_plan_id' => ['required', 'integer'],
         ]);
 
-        $plan = $request->user()->monthlyPlans()->findOrFail($validated['monthly_plan_id']);
+        $ownerId = (int) DB::table('business_settings')->where('id', 1)->value('owner_user_id');
+        $plan = MonthlyPlan::query()->where('user_id', $ownerId)->findOrFail($validated['monthly_plan_id']);
         $start = sprintf('%04d-%02d-01', $plan->year, $plan->month);
         $end = date('Y-m-t', strtotime($start));
 
-        $budgets = $plan->budgets()
-            ->with('category')
-            ->withSum([
-                'transactions as spent_amount' => fn (Builder $query) => $query
-                    ->where('status', 'completed')
-                    ->whereBetween('date', [$start, $end]),
-            ], 'amount')
-            ->get();
+        $budgets = $plan->budgets()->with('category')->get()->map(function (Budget $budget) use ($start, $end): array {
+            $spent = (float) Transaction::query()
+                ->where('category_id', $budget->category_id)
+                ->where('transaction_type', 'expense')
+                ->where('financial_status', 'posted')
+                ->whereBetween('date', [$start, $end])
+                ->sum('amount');
+
+            return $budget->toArray() + ['spent_amount' => $spent];
+        });
 
         return response()->json(['data' => $budgets]);
     }
@@ -43,7 +50,7 @@ class BudgetController extends Controller
         ]);
 
         $plan = $request->user()->monthlyPlans()->findOrFail($validated['monthly_plan_id']);
-        $category = $request->user()->categories()->findOrFail($validated['category_id']);
+        $category = Category::query()->findOrFail($validated['category_id']);
 
         if ($plan->budgets()->where('category_id', $category->id)->exists()) {
             throw ValidationException::withMessages([
@@ -107,7 +114,7 @@ class BudgetController extends Controller
     {
         return Budget::query()
             ->whereKey($budget->id)
-            ->whereHas('monthlyPlan', fn (Builder $query) => $query->where('user_id', $request->user()->id))
+            ->whereHas('monthlyPlan', fn (Builder $query) => $query->where('user_id', (int) DB::table('business_settings')->where('id', 1)->value('owner_user_id')))
             ->firstOrFail();
     }
 

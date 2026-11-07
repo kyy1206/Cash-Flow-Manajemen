@@ -24,7 +24,7 @@ class ReceiptExtractionControllerTest extends TestCase
                 'IsErroredOnProcessing' => false,
             ]),
         ]);
-        Sanctum::actingAs(User::factory()->create());
+        Sanctum::actingAs(User::factory()->create(['role' => 'staff']));
 
         $this->postJson('/api/receipt-extractions', [
             'receipt' => UploadedFile::fake()->image('struk.jpg'),
@@ -47,7 +47,7 @@ class ReceiptExtractionControllerTest extends TestCase
     public function test_ocr_returns_a_clear_error_when_the_service_is_not_configured(): void
     {
         config()->set('services.receipt_ocr.api_key', null);
-        Sanctum::actingAs(User::factory()->create());
+        Sanctum::actingAs(User::factory()->create(['role' => 'staff']));
 
         $this->postJson('/api/receipt-extractions', [
             'receipt' => UploadedFile::fake()->image('struk.jpg'),
@@ -66,7 +66,7 @@ class ReceiptExtractionControllerTest extends TestCase
                 'IsErroredOnProcessing' => false,
             ]),
         ]);
-        Sanctum::actingAs(User::factory()->create());
+        Sanctum::actingAs(User::factory()->create(['role' => 'staff']));
 
         $this->postJson('/api/receipt-extractions', [
             'receipt' => UploadedFile::fake()->image('struk.jpg'),
@@ -79,7 +79,7 @@ class ReceiptExtractionControllerTest extends TestCase
     {
         $this->postJson('/api/receipt-extractions', [])->assertUnauthorized();
 
-        Sanctum::actingAs(User::factory()->create());
+        Sanctum::actingAs(User::factory()->create(['role' => 'staff']));
         $this->postJson('/api/receipt-extractions', [
             'receipt' => UploadedFile::fake()->create('receipt.txt', 5, 'text/plain'),
         ])->assertUnprocessable()
@@ -95,7 +95,7 @@ class ReceiptExtractionControllerTest extends TestCase
                 'ErrorMessage' => ['invalid image'],
             ]),
         ]);
-        Sanctum::actingAs(User::factory()->create());
+        Sanctum::actingAs(User::factory()->create(['role' => 'staff']));
 
         $this->postJson('/api/receipt-extractions', [
             'receipt' => UploadedFile::fake()->image('struk.jpg'),
@@ -112,11 +112,21 @@ class ReceiptExtractionControllerTest extends TestCase
                 'ParsedResults' => [['ParsedText' => '']],
             ]),
         ]);
-        Sanctum::actingAs(User::factory()->create());
+        Sanctum::actingAs(User::factory()->create(['role' => 'staff']));
 
         $this->postJson('/api/receipt-extractions', [
             'receipt' => UploadedFile::fake()->image('struk.jpg'),
         ])->assertUnprocessable()
             ->assertJsonPath('message', 'Teks struk tidak terbaca. Coba foto yang lebih terang, fokus, dan tidak terpotong.');
+    }
+
+    public function test_receipt_extraction_is_for_staff_only(): void
+    {
+        foreach (['owner', 'supervisor'] as $role) {
+            Sanctum::actingAs(User::factory()->create(['role' => $role]));
+            $this->postJson('/api/receipt-extractions', [
+                'receipt' => UploadedFile::fake()->image('struk.jpg'),
+            ])->assertForbidden();
+        }
     }
 }

@@ -1,0 +1,337 @@
+.business-main {
+  max-width: 1500px;
+}
+
+.business-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 14px;
+}
+
+.business-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.business-section-heading h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 14px;
+}
+
+.business-section-heading a {
+  color: #5146e5;
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.business-wallet-list {
+  display: grid;
+}
+
+.business-wallet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-top: 1px solid #edf0f5;
+}
+
+.business-wallet-row > span {
+  display: grid;
+  gap: 4px;
+}
+
+.business-wallet-row strong {
+  color: #172033;
+  font-size: 11px;
+}
+
+.business-wallet-row small,
+.business-muted {
+  color: #718096;
+  font-size: 10px;
+}
+
+.business-wallet-row > strong {
+  white-space: nowrap;
+}
+
+.business-wallet-row .business-income {
+  color: #059669;
+}
+
+.business-wallet-row .business-expense {
+  color: #dc2626;
+}
+
+.business-logout {
+  width: 100%;
+  padding: 9px;
+  border: 0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+}
+
+.business-logout:hover {
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.business-panel {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #edf0f5;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 5px 18px rgba(2, 6, 23, .025);
+}
+
+.business-form {
+  margin-bottom: 14px;
+}
+
+.business-form h2 {
+  margin: 0 0 5px;
+  color: #172033;
+  font-size: 15px;
+}
+
+.business-form p {
+  margin: 0 0 16px;
+  color: #718096;
+  font-size: 11px;
+}
+
+.business-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.business-field {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.business-field input,
+.business-field select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #dfe5ee;
+  border-radius: 7px;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+  font-size: 12px;
+}
+
+.business-button {
+  min-height: 34px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: #5146e5;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.business-button:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.business-button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.business-button.secondary {
+  border: 1px solid #dfe5ee;
+  background: #fff;
+  color: #475569;
+}
+
+.business-button.secondary:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.business-hint {
+  margin-top: 12px !important;
+}
+
+.business-table-wrap {
+  overflow: auto;
+  padding: 0;
+}
+
+.business-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.business-table th,
+.business-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #edf0f5;
+  color: #475569;
+  font-size: 11px;
+}
+
+.business-table th {
+  background: #f8fafc;
+  color: #718096;
+  font-size: 10px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.business-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.business-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.business-balance-card {
+  display: grid;
+  gap: 8px;
+}
+
+.business-balance-card > span,
+.business-balance-card > small {
+  color: #718096;
+  font-size: 10px;
+}
+
+.business-balance-card h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 15px;
+}
+
+.business-balance-card strong {
+  color: #4338ca;
+  font-size: 20px;
+}
+
+.business-list {
+  display: grid;
+  gap: 10px;
+}
+
+.business-list-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.business-list-item > div:first-child {
+  display: grid;
+  flex: 1;
+  gap: 5px;
+}
+
+.business-list-item strong {
+  color: #172033;
+  font-size: 12px;
+}
+
+.business-list-item span,
+.business-list-item small {
+  color: #718096;
+  font-size: 10px;
+}
+
+.business-request-value {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.business-status {
+  padding: 4px 8px;
+  border-radius: 99px;
+  background: #f1f5f9;
+  color: #475569 !important;
+  font-size: 9px !important;
+  text-transform: capitalize;
+}
+
+.status-pending {
+  background: #fff7ed;
+  color: #c2410c !important;
+}
+
+.status-approved,
+.status-paid,
+.status-reviewed {
+  background: #ecfdf5;
+  color: #047857 !important;
+}
+
+.status-rejected {
+  background: #fff1f2;
+  color: #be123c !important;
+}
+
+.business-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.business-decision-note {
+  max-width: 220px;
+}
+
+@media (max-width: 760px) {
+  .business-main {
+    padding: 0 14px 28px;
+  }
+
+  .business-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .business-list-item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .business-request-value {
+    justify-items: start;
+  }
+
+  .business-actions {
+    width: 100%;
+  }
+
+  .business-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}

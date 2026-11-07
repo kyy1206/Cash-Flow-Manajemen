@@ -24,6 +24,7 @@ class DashboardControllerTest extends TestCase
         $budget = $plan->budgets()->create(['category_id' => $category->id, 'amount' => 1200000]);
         $user->transactions()->create([
             'budget_id' => $budget->id,
+            'category_id' => $category->id,
             'amount' => 900000,
             'date' => '2026-10-15',
             'description' => 'Groceries',
@@ -40,6 +41,7 @@ class DashboardControllerTest extends TestCase
             'date' => '2026-10-16',
             'description' => 'Pending expense',
             'status' => 'pending',
+            'financial_status' => 'draft',
         ]);
         Sanctum::actingAs($user);
 
@@ -56,11 +58,11 @@ class DashboardControllerTest extends TestCase
             ->assertJsonCount(2, 'data.daily_spending');
     }
 
-    public function test_dashboard_does_not_include_another_users_finances(): void
+    public function test_dashboard_limits_staff_activity_totals_to_their_own_transactions(): void
     {
         $this->travelTo('2026-10-16 12:00:00');
         $owner = User::factory()->create();
-        $otherUser = User::factory()->create();
+        $otherUser = User::factory()->create(['role' => 'staff']);
         $owner->monthlyPlans()->create([
             'month' => 10,
             'year' => 2026,
@@ -71,13 +73,18 @@ class DashboardControllerTest extends TestCase
             'date' => '2026-10-16',
             'status' => 'completed',
         ]);
+        $otherUser->transactions()->create([
+            'amount' => 100000,
+            'date' => '2026-10-16',
+            'status' => 'completed',
+        ]);
         Sanctum::actingAs($otherUser);
 
         $this->getJson('/api/dashboard')->assertOk()
-            ->assertJsonPath('data.plan', null)
-            ->assertJsonPath('data.summary.budget_total', 0)
-            ->assertJsonPath('data.summary.spent_total', 0)
-            ->assertJsonCount(0, 'data.recent_transactions');
+            ->assertJsonPath('data.summary.budget_total', 5000000)
+            ->assertJsonPath('data.summary.spent_total', 100000)
+            ->assertJsonCount(1, 'data.recent_transactions')
+            ->assertJsonPath('data.recent_transactions.0.amount', 100000);
     }
 
     public function test_dashboard_marks_spending_over_the_plan_as_overbudget(): void

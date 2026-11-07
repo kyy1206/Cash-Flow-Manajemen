@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -16,6 +17,7 @@ class NotificationControllerTest extends TestCase
         $this->travelTo('2026-10-17 10:00:00');
         $user = User::factory()->create();
         $category = $user->categories()->create(['name' => 'Makan']);
+        $wallet = Wallet::create(['created_by' => $user->id, 'name' => 'Kas', 'type' => 'cash', 'opening_balance' => 0]);
         $plan = $user->monthlyPlans()->create([
             'month' => 10,
             'year' => 2026,
@@ -25,6 +27,9 @@ class NotificationControllerTest extends TestCase
         Sanctum::actingAs($user);
 
         $this->postJson('/api/transactions', [
+            'transaction_type' => 'expense',
+            'category_id' => $category->id,
+            'wallet_id' => $wallet->id,
             'budget_id' => $budget->id,
             'amount' => 55000,
             'date' => '2026-10-17',
@@ -44,6 +49,9 @@ class NotificationControllerTest extends TestCase
         ]);
 
         $this->postJson('/api/transactions', [
+            'transaction_type' => 'expense',
+            'category_id' => $category->id,
+            'wallet_id' => $wallet->id,
             'budget_id' => $budget->id,
             'amount' => 1000,
             'date' => '2026-10-17',

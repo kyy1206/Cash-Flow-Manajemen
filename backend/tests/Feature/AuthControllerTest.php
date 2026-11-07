@@ -11,19 +11,28 @@ class AuthControllerTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    public function test_registration_creates_a_user_with_a_hashed_password_and_token(): void
+    public function test_initial_owner_setup_creates_a_hashed_password_and_token(): void
     {
-        $this->postJson('/api/register', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->postJson('/api/setup/owner', [
+            'name' => 'Business Owner',
+            'email' => 'owner@example.com',
+            'business_name' => 'Toko Contoh',
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ])->assertCreated()
-            ->assertJsonPath('user.email', 'test@example.com')
+            ->assertJsonPath('user.email', 'owner@example.com')
+            ->assertJsonPath('user.role', 'owner')
             ->assertJsonMissingPath('user.password')
             ->assertJsonStructure(['token']);
 
-        $user = User::where('email', 'test@example.com')->firstOrFail();
+        $this->postJson('/api/register', [
+            'name' => 'Public User',
+            'email' => 'public@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertNotFound();
+
+        $user = User::where('email', 'owner@example.com')->firstOrFail();
         $this->assertTrue(Hash::check('password123', $user->password));
     }
 

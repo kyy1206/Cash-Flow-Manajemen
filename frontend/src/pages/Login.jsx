@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
+import api from '../services/api';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -8,6 +9,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [ownerSetupRequired, setOwnerSetupRequired] = useState(null);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -16,6 +18,13 @@ const Login = () => {
 
   useEffect(() => {
     isMounted.current = true;
+    api.get('/setup/status')
+      .then(({ data }) => {
+        if (isMounted.current) setOwnerSetupRequired(data.owner_setup_required);
+      })
+      .catch(() => {
+        if (isMounted.current) setError('Status aplikasi tidak dapat diperiksa. Coba muat ulang halaman.');
+      });
     return () => { isMounted.current = false; };
   }, []);
 
@@ -197,7 +206,7 @@ const Login = () => {
 
             <h2 id="login-title" style={titleStyle}>Selamat Datang Kembali</h2>
             <p style={descStyle}>
-              Masuk ke akun Anda untuk melanjutkan. Kelola pengeluaran, rencana keuangan, dan target Anda dengan mudah.
+              Masuk ke akun Anda untuk melanjutkan.               Catat arus kas usaha, pantau saldo, dan kelola persetujuan pengeluaran.
             </p>
 
             {error && (
@@ -300,7 +309,9 @@ const Login = () => {
 
             <p style={{ marginTop: 14, textAlign: 'center', color: '#6b7280', fontSize: 13 }}>
               Belum punya akun?{' '}
-              <Link to="/register" style={smallLinkStyle}>Daftar</Link>
+              {ownerSetupRequired !== false
+                ? <Link to="/setup" style={smallLinkStyle}>Daftarkan Owner</Link>
+                : 'Owner usaha sudah terdaftar.'}
             </p>
           </div>
 

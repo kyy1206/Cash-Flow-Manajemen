@@ -35,6 +35,8 @@ const CategoryManagement = () => {
   const [description, setDescription] = useState('');
   const [icon, setIcon] = useState('tag');
   const [color, setColor] = useState(colors[0]);
+  const [type, setType] = useState('expense');
+  const [requiresApproval, setRequiresApproval] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -68,6 +70,8 @@ const CategoryManagement = () => {
     setDescription('');
     setIcon('tag');
     setColor(colors[0]);
+    setType('expense');
+    setRequiresApproval(false);
     setEditingCategory(null);
   };
 
@@ -83,6 +87,8 @@ const CategoryManagement = () => {
     setDescription(category.description ?? '');
     setIcon(category.icon ?? 'tag');
     setColor(category.color ?? colors[0]);
+    setType(category.type ?? 'expense');
+    setRequiresApproval(Boolean(category.requires_approval));
     setNotice('');
   };
 
@@ -91,7 +97,14 @@ const CategoryManagement = () => {
     setSaving(true);
     setError('');
     setNotice('');
-    const payload = { name: name.trim(), description: description.trim() || null, icon, color };
+    const payload = {
+      name: name.trim(),
+      description: description.trim() || null,
+      icon,
+      color,
+      type,
+      requires_approval: type === 'expense' && requiresApproval,
+    };
     try {
       if (editingCategory) {
         await api.put(`/categories/${editingCategory.id}`, payload);
@@ -145,12 +158,12 @@ const CategoryManagement = () => {
   return (
     <div className="finance-app">
       <aside className="finance-sidebar">
-        <Link to="/dashboard" className="finance-brand"><span className="finance-brand-icon">BH</span><span><strong>Bocor Halus</strong><small>PERSONAL FINANCE</small></span></Link>
+        <Link to="/dashboard" className="finance-brand"><span className="finance-brand-icon">BH</span><span><strong>Bocor Halus</strong><small>KEUANGAN UMKM</small></span></Link>
         <Link to="/dashboard" className="finance-nav-link"><span>⌂</span> Dashboard</Link>
-        <Link to="/expenses" className="finance-nav-link"><span>↕</span> Pengeluaran</Link>
-        <Link to="/budgets" className="finance-nav-link"><span>▤</span> Budget</Link>
+        <Link to="/transactions" className="finance-nav-link"><span>↕</span> Transaksi</Link>
+        <Link to="/requests" className="finance-nav-link"><span>▣</span> Pengajuan</Link>
+        <Link to="/wallets" className="finance-nav-link"><span>▤</span> Kas &amp; Rekening</Link>
         <Link to="/categories" className="finance-nav-link active" aria-current="page"><span>＋</span> Pengaturan Kategori</Link>
-        <Link to="/subscriptions" className="finance-nav-link"><span>↻</span> Subscription</Link>
         <Link to="/reports" className="finance-nav-link"><span>▥</span> Laporan</Link>
         <Link to="/notifications" className="finance-nav-link"><span>♧</span> Notifikasi</Link>
         <div className="finance-sidebar-spacer" />
@@ -161,14 +174,14 @@ const CategoryManagement = () => {
       <main className="finance-main">
         <header className="finance-topbar">
           <div className="finance-breadcrumb"><Link to="/budgets">Budget</Link><span>/</span><strong>Tambah Kategori</strong></div>
-          <div className="finance-topbar-actions"><span className="finance-eyebrow">KATEGORI PERSONAL</span><span className="finance-avatar">{user?.name?.[0] ?? 'U'}</span></div>
+          <div className="finance-topbar-actions"><span className="finance-eyebrow">KATEGORI USAHA</span><span className="finance-avatar">{user?.name?.[0] ?? 'U'}</span></div>
         </header>
 
         <section className="finance-page-heading">
           <div>
-            <span className="finance-eyebrow">KELOLA PENGELUARAN</span>
+            <span className="finance-eyebrow">KELOLA KATEGORI USAHA</span>
             <h1>{editingCategory ? 'Edit Kategori' : 'Tambah Kategori'}</h1>
-            <p>Buat kategori pengeluaran khusus untuk merencanakan dan memantau keuangan Anda dengan lebih terstruktur.</p>
+            <p>Kelola kategori pemasukan dan pengeluaran bersama untuk pencatatan keuangan usaha.</p>
           </div>
           <Link to="/budgets" className="finance-button secondary">← Kembali ke Manajemen Budget</Link>
         </section>
@@ -179,9 +192,21 @@ const CategoryManagement = () => {
         <div className="finance-category-layout">
           <form className="finance-category-form" onSubmit={saveCategory}>
             <label className="finance-field">
+              Jenis kategori
+              <select value={type} onChange={(event) => setType(event.target.value)}>
+                <option value="income">Pemasukan</option>
+                <option value="expense">Pengeluaran</option>
+              </select>
+            </label>
+            <label className="finance-field">
               Nama kategori
               <input value={name} onChange={(event) => setName(event.target.value)} maxLength="255" placeholder="Contoh: Perawatan Hewan" required />
             </label>
+            {type === 'expense' && (
+              <label className="finance-field">
+                <span><input type="checkbox" checked={requiresApproval} onChange={(event) => setRequiresApproval(event.target.checked)} /> Wajib persetujuan Supervisor</span>
+              </label>
+            )}
             <div className="finance-category-limit">{name.length} / 255 karakter</div>
 
             <section className="finance-category-preset">
