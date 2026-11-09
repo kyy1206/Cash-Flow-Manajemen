@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/useAuth';
+import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { notifyFinancialDataChanged } from '../services/financialDataEvents';
 import './BudgetManagement.css';
@@ -28,8 +27,6 @@ const pageModules = [
 ];
 
 const CategoryManagement = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -40,7 +37,6 @@ const CategoryManagement = () => {
   const [editingCategory, setEditingCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [loadingLogout, setLoadingLogout] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -143,40 +139,11 @@ const CategoryManagement = () => {
     }
   };
 
-  const handleLogout = async () => {
-    setLoadingLogout(true);
-    try {
-      await logout();
-      navigate('/login');
-    } finally {
-      setLoadingLogout(false);
-    }
-  };
-
   const iconGlyph = iconChoices.find((choice) => choice.value === icon)?.glyph ?? '◇';
 
   return (
-    <div className="finance-app">
-      <aside className="finance-sidebar">
-        <Link to="/dashboard" className="finance-brand"><span className="finance-brand-icon">BH</span><span><strong>Bocor Halus</strong><small>KEUANGAN UMKM</small></span></Link>
-        <Link to="/dashboard" className="finance-nav-link"><span>⌂</span> Dashboard</Link>
-        <Link to="/transactions" className="finance-nav-link"><span>↕</span> Transaksi</Link>
-        <Link to="/requests" className="finance-nav-link"><span>▣</span> Pengajuan</Link>
-        <Link to="/wallets" className="finance-nav-link"><span>▤</span> Kas &amp; Rekening</Link>
-        <Link to="/categories" className="finance-nav-link active" aria-current="page"><span>＋</span> Pengaturan Kategori</Link>
-        <Link to="/reports" className="finance-nav-link"><span>▥</span> Laporan</Link>
-        <Link to="/notifications" className="finance-nav-link"><span>♧</span> Notifikasi</Link>
-        <div className="finance-sidebar-spacer" />
-        <div className="finance-user"><span className="finance-avatar">{user?.name?.[0] ?? 'U'}</span><span><strong>{user?.name ?? 'User'}</strong><small>{user?.email ?? ''}</small></span></div>
-        <button type="button" className="finance-logout" onClick={handleLogout} disabled={loadingLogout}>{loadingLogout ? 'Keluar...' : 'Keluar akun'}</button>
-      </aside>
-
-      <main className="finance-main">
-        <header className="finance-topbar">
-          <div className="finance-breadcrumb"><Link to="/budgets">Budget</Link><span>/</span><strong>Tambah Kategori</strong></div>
-          <div className="finance-topbar-actions"><span className="finance-eyebrow">KATEGORI USAHA</span><span className="finance-avatar">{user?.name?.[0] ?? 'U'}</span></div>
-        </header>
-
+    <div className="owner-module-content">
+      <div className="owner-module-main">
         <section className="finance-page-heading">
           <div>
             <span className="finance-eyebrow">KELOLA KATEGORI USAHA</span>
@@ -293,7 +260,7 @@ const CategoryManagement = () => {
             </section>
           </aside>
         </div>
-      </main>
+      </div>
     </div>
   );
 };

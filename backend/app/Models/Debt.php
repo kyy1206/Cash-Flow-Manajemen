@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Debt extends Model
 {
+    use BelongsToBusiness;
+
     protected $fillable = [
         'created_by',
         'type',

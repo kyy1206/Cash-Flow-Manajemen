@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business;
 use App\Models\Category;
 use App\Models\User;
 use App\Models\Wallet;
@@ -16,12 +17,7 @@ class AuthController extends Controller
 {
     public function setupStatus(): JsonResponse
     {
-        return response()->json([
-            'owner_setup_required' => DB::table('business_settings')
-                ->where('id', 1)
-                ->whereNull('owner_user_id')
-                ->exists(),
-        ]);
+        return response()->json(['owner_setup_required' => true]);
     }
 
     public function setupOwner(Request $request): JsonResponse
@@ -34,9 +30,6 @@ class AuthController extends Controller
         ]);
 
         $user = DB::transaction(function () use ($validated): User {
-            $settings = DB::table('business_settings')->where('id', 1)->lockForUpdate()->first();
-            abort_if($settings === null || $settings->owner_user_id !== null, 409, 'Owner sudah dibuat.');
-
             $owner = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -45,11 +38,11 @@ class AuthController extends Controller
                 'is_active' => true,
             ]);
 
-            DB::table('business_settings')->where('id', 1)->update([
+            $business = Business::create([
                 'owner_user_id' => $owner->id,
                 'business_name' => $validated['business_name'],
-                'updated_at' => now(),
             ]);
+            $owner->forceFill(['business_id' => $business->id])->save();
 
             Wallet::create([
                 'created_by' => $owner->id,

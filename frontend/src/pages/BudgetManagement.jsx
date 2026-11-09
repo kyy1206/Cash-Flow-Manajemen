@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import api from '../services/api';
 import { notifyFinancialDataChanged } from '../services/financialDataEvents';
@@ -34,28 +34,6 @@ const getCurrentPeriod = () => {
   const current = new Date();
   return `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
 };
-
-const SharedSidebar = ({ user, onLogout, loadingLogout, active }) => (
-  <aside className="finance-sidebar">
-    <Link to="/dashboard" className="finance-brand">
-      <span className="finance-brand-icon">BH</span>
-      <span><strong>Bocor Halus</strong><small>PERSONAL FINANCE</small></span>
-    </Link>
-    <Link to="/dashboard" className="finance-nav-link"><span>⌂</span> Dashboard</Link>
-    <Link to="/expenses" className="finance-nav-link"><span>↕</span> Pengeluaran</Link>
-    <Link to="/budgets" className={`finance-nav-link ${active === 'budgets' ? 'active' : ''}`} aria-current={active === 'budgets' ? 'page' : undefined}><span>▤</span> Budget</Link>
-    {user?.role === 'owner' && <Link to="/categories" className={`finance-nav-link ${active === 'categories' ? 'active' : ''}`} aria-current={active === 'categories' ? 'page' : undefined}><span>＋</span> Kategori</Link>}
-    <Link to="/subscriptions" className="finance-nav-link"><span>↻</span> Subscription</Link>
-    <Link to="/reports" className="finance-nav-link"><span>▥</span> Laporan</Link>
-    <Link to="/notifications" className="finance-nav-link"><span>♧</span> Notifikasi</Link>
-    <div className="finance-sidebar-spacer" />
-    <div className="finance-user">
-      <span className="finance-avatar">{user?.name?.[0] ?? 'U'}</span>
-      <span><strong>{user?.name ?? 'User'}</strong><small>{user?.email ?? ''}</small></span>
-    </div>
-    <button type="button" className="finance-logout" onClick={onLogout} disabled={loadingLogout}>{loadingLogout ? 'Keluar...' : 'Keluar akun'}</button>
-  </aside>
-);
 
 const AllocationForm = ({ allocation, categories, saving, error, onCancel, onSubmit }) => {
   const [categoryId, setCategoryId] = useState(allocation ? String(allocation.category_id) : '');
@@ -103,9 +81,8 @@ const AllocationForm = ({ allocation, categories, saving, error, onCancel, onSub
 };
 
 const BudgetManagement = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const isOwner = user?.role === 'owner';
-  const navigate = useNavigate();
   const [period, setPeriod] = useState(getCurrentPeriod);
   const [plan, setPlan] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -117,7 +94,6 @@ const BudgetManagement = () => {
   const [allocationForm, setAllocationForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [loadingLogout, setLoadingLogout] = useState(false);
   const [error, setError] = useState('');
   const [formError, setFormError] = useState('');
   const [notice, setNotice] = useState('');
@@ -179,16 +155,6 @@ const BudgetManagement = () => {
   const availableCategories = categories.filter(
     (category) => !budgets.some((budget) => budget.category_id === category.id),
   );
-
-  const handleLogout = async () => {
-    setLoadingLogout(true);
-    try {
-      await logout();
-      navigate('/login');
-    } finally {
-      setLoadingLogout(false);
-    }
-  };
 
   const savePlan = async (event) => {
     event.preventDefault();
@@ -254,20 +220,15 @@ const BudgetManagement = () => {
   };
 
   return (
-    <div className="finance-app">
-      <SharedSidebar user={user} onLogout={handleLogout} loadingLogout={loadingLogout} active="budgets" />
-      <main className="finance-main">
-        <header className="finance-topbar">
-          <div className="finance-breadcrumb"><Link to="/dashboard">Dashboard</Link><span>/</span><strong>Budget &amp; Kategori</strong></div>
-          <div className="finance-topbar-actions">
-            <label className="finance-period-label">
-              Periode
-              <input type="month" aria-label="Periode budget" value={period} onChange={(event) => setPeriod(event.target.value)} />
-            </label>
-            {isOwner && <Link className="finance-button secondary" to="/categories">Kelola Kategori</Link>}
-            <span className="finance-avatar">{user?.name?.[0] ?? 'U'}</span>
-          </div>
-        </header>
+    <div className="owner-module-content">
+      <div className="owner-module-main">
+        <div className="owner-module-toolbar">
+          <label className="finance-period-label">
+            Periode
+            <input type="month" aria-label="Periode budget" value={period} onChange={(event) => setPeriod(event.target.value)} />
+          </label>
+          {isOwner && <Link className="business-button secondary" to="/categories">Kelola Kategori</Link>}
+        </div>
 
         <section className="finance-page-heading">
           <div>
@@ -418,7 +379,7 @@ const BudgetManagement = () => {
             </div>
           </>
         )}
-      </main>
+      </div>
       {allocationForm && (
         <AllocationForm
           key={allocationForm.allocation?.id ?? 'new-allocation'}

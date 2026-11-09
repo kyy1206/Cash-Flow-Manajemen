@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\Business;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -40,11 +40,21 @@ class UserFactory extends Factory
     {
         return $this->afterCreating(function (User $user): void {
             if ($user->role === 'owner') {
-                DB::table('business_settings')
-                    ->where('id', 1)
-                    ->whereNull('owner_user_id')
-                    ->update(['owner_user_id' => $user->id]);
+                $business = Business::create([
+                    'owner_user_id' => $user->id,
+                    'business_name' => 'Usaha '.$user->id,
+                ]);
+                $user->forceFill(['business_id' => $business->id])->save();
+
+                return;
             }
+
+            $business = Business::query()->oldest('id')->first();
+            if ($business === null) {
+                $business = User::factory()->create(['role' => 'owner'])->business;
+            }
+
+            $user->forceFill(['business_id' => $business->id])->save();
         });
     }
 

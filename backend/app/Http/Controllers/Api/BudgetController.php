@@ -11,7 +11,6 @@ use App\Services\NotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class BudgetController extends Controller
@@ -22,7 +21,7 @@ class BudgetController extends Controller
             'monthly_plan_id' => ['required', 'integer'],
         ]);
 
-        $ownerId = (int) DB::table('business_settings')->where('id', 1)->value('owner_user_id');
+        $ownerId = (int) ($request->user()->business?->owner_user_id ?? $request->user()->id);
         $plan = MonthlyPlan::query()->where('user_id', $ownerId)->findOrFail($validated['monthly_plan_id']);
         $start = sprintf('%04d-%02d-01', $plan->year, $plan->month);
         $end = date('Y-m-t', strtotime($start));
@@ -114,7 +113,7 @@ class BudgetController extends Controller
     {
         return Budget::query()
             ->whereKey($budget->id)
-            ->whereHas('monthlyPlan', fn (Builder $query) => $query->where('user_id', (int) DB::table('business_settings')->where('id', 1)->value('owner_user_id')))
+            ->whereHas('monthlyPlan', fn (Builder $query) => $query->where('user_id', (int) ($request->user()->business?->owner_user_id ?? $request->user()->id)))
             ->firstOrFail();
     }
 

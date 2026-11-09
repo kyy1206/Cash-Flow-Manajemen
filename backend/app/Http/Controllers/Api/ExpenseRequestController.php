@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ApprovalLog;
 use App\Models\AuditLog;
+use App\Models\Category;
 use App\Models\ExpenseRequest;
 use App\Models\Notification;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -41,15 +43,15 @@ class ExpenseRequestController extends Controller
             'attachment' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
         ]);
 
-        $walletIsActive = DB::table('wallets')
-            ->where('id', $validated['wallet_id'])
+        $walletIsActive = Wallet::query()
+            ->whereKey($validated['wallet_id'])
             ->where('is_active', true)
             ->exists();
         abort_unless($walletIsActive, 422, 'Sumber dana tidak aktif.');
 
         if (isset($validated['category_id'])) {
-            $categoryIsExpense = DB::table('categories')
-                ->where('id', $validated['category_id'])
+            $categoryIsExpense = Category::query()
+                ->whereKey($validated['category_id'])
                 ->where('type', 'expense')
                 ->exists();
             abort_unless($categoryIsExpense, 422, 'Kategori harus bertipe pengeluaran.');

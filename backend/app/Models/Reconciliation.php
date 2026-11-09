@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Reconciliation extends Model
 {
+    use BelongsToBusiness;
+
     protected $fillable = [
         'wallet_id',
         'created_by',
@@ -37,5 +39,10 @@ class Reconciliation extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 }

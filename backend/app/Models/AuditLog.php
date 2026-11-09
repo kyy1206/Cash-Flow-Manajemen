@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AuditLog extends Model
 {
+    use BelongsToBusiness;
+
     protected $fillable = [
         'user_id',
         'action',

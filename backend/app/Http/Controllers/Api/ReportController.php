@@ -8,7 +8,6 @@ use App\Models\Transaction;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
@@ -24,7 +23,7 @@ class ReportController extends Controller
         $selectedStart = CarbonImmutable::create($year, $month, 1)->toDateString();
         $selectedEnd = CarbonImmutable::create($year, $month, 1)->endOfMonth()->toDateString();
 
-        $ownerId = (int) DB::table('business_settings')->where('id', 1)->value('owner_user_id');
+        $ownerId = (int) ($request->user()->business?->owner_user_id ?? $request->user()->id);
         $staffId = $request->user()->isRole('staff') ? $request->user()->id : null;
         $monthlySpending = collect(range(1, 12))->map(function (int $monthNumber) use ($year, $ownerId, $staffId): array {
             $start = CarbonImmutable::create($year, $monthNumber, 1);

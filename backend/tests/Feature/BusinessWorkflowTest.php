@@ -17,7 +17,7 @@ class BusinessWorkflowTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    public function test_owner_setup_is_one_time_and_public_registration_is_unavailable(): void
+    public function test_each_owner_can_set_up_a_separate_business(): void
     {
         $payload = [
             'name' => 'Business Owner',
@@ -31,15 +31,17 @@ class BusinessWorkflowTest extends TestCase
         $this->postJson('/api/setup/owner', $payload)
             ->assertCreated()
             ->assertJsonPath('user.role', 'owner');
-        $this->getJson('/api/setup/status')->assertOk()->assertJsonPath('owner_setup_required', false);
+        $this->getJson('/api/setup/status')->assertOk()->assertJsonPath('owner_setup_required', true);
         $this->postJson('/api/register', $payload)->assertNotFound();
         $this->postJson('/api/setup/owner', [
             ...$payload,
             'email' => 'another-owner@example.test',
-        ])->assertStatus(409);
+            'business_name' => 'Usaha Kedua',
+        ])->assertCreated();
 
-        $this->assertDatabaseCount('wallets', 1);
-        $this->assertDatabaseCount('categories', 4);
+        $this->assertDatabaseCount('businesses', 2);
+        $this->assertDatabaseCount('wallets', 2);
+        $this->assertDatabaseCount('categories', 8);
     }
 
     public function test_approval_does_not_change_balance_until_staff_records_payment(): void
@@ -49,7 +51,7 @@ class BusinessWorkflowTest extends TestCase
         $staff = User::factory()->create(['role' => 'staff']);
         $this->assertSame('staff', $staff->role);
         $this->assertTrue($staff->is_active);
-        DB::table('business_settings')->where('id', 1)->update(['approval_threshold' => 50000]);
+        $owner->business()->update(['approval_threshold' => 50000]);
 
         Sanctum::actingAs($staff);
         $request = $this->postJson('/api/expense-requests', [
@@ -79,6 +81,36 @@ class BusinessWorkflowTest extends TestCase
         $this->assertDatabaseHas('expense_requests', ['id' => $requestId, 'status' => 'paid']);
         $this->assertDatabaseHas('approval_logs', ['expense_request_id' => $requestId, 'approver_id' => $supervisor->id]);
         $this->assertDatabaseHas('audit_logs', ['user_id' => $staff->id, 'action' => 'expense_request.paid']);
+    }
+
+    public function test_supervisor_can_reject_an_expense_request_with_a_reason(): void
+    {
+        [, $wallet, $category] = $this->business();
+        $staff = User::factory()->create(['role' => 'staff']);
+        $supervisor = User::factory()->create(['role' => 'supervisor']);
+
+        Sanctum::actingAs($staff);
+        $request = $this->postJson('/api/expense-requests', [
+            'category_id' => $category->id,
+            'wallet_id' => $wallet->id,
+            'amount' => 25000,
+            'purpose' => 'Pembelian perlengkapan',
+        ])->assertCreated();
+        $requestId = $request->json('data.id');
+
+        Sanctum::actingAs($supervisor);
+        $this->postJson("/api/expense-requests/{$requestId}/reject", ['note' => 'Tidak sesuai kebutuhan usaha'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'rejected')
+            ->assertJsonPath('data.decision_note', 'Tidak sesuai kebutuhan usaha');
+
+        $this->assertDatabaseHas('approval_logs', [
+            'expense_request_id' => $requestId,
+            'approver_id' => $supervisor->id,
+            'decision' => 'rejected',
+            'note' => 'Tidak sesuai kebutuhan usaha',
+        ]);
+        $this->assertDatabaseCount('transactions', 0);
     }
 
     public function test_staff_cannot_approve_their_own_request_or_directly_post_required_expenses(): void
@@ -206,6 +238,37 @@ class BusinessWorkflowTest extends TestCase
             ->assertJsonPath('data.summary.expense_total', 0);
     }
 
+    public function test_reconciliation_list_loads_creator_and_reviewer_and_only_supervisor_can_review(): void
+    {
+        [$owner, $wallet] = $this->business();
+        $supervisor = User::factory()->create(['role' => 'supervisor']);
+
+        Sanctum::actingAs($owner);
+        $created = $this->postJson('/api/reconciliations', [
+            'wallet_id' => $wallet->id,
+            'reconciled_at' => '2026-11-08',
+            'counted_balance' => 210000,
+            'notes' => 'Perhitungan kas harian',
+        ])->assertCreated();
+        $reconciliationId = $created->json('data.id');
+
+        $this->getJson('/api/reconciliations')
+            ->assertOk()
+            ->assertJsonPath('data.data.0.creator.id', $owner->id)
+            ->assertJsonPath('data.data.0.reviewer', null);
+
+        $this->postJson("/api/reconciliations/{$reconciliationId}/review")->assertForbidden();
+
+        Sanctum::actingAs($supervisor);
+        $this->postJson("/api/reconciliations/{$reconciliationId}/review")
+            ->assertOk()
+            ->assertJsonPath('data.reviewer.id', $supervisor->id);
+
+        $this->getJson('/api/reconciliations')
+            ->assertOk()
+            ->assertJsonPath('data.data.0.reviewer.id', $supervisor->id);
+    }
+
     public function test_posted_transaction_cannot_be_deleted_and_can_only_be_reversed_once(): void
     {
         [$owner, $wallet] = $this->business();
@@ -232,7 +295,6 @@ class BusinessWorkflowTest extends TestCase
     private function business(): array
     {
         $owner = User::factory()->create(['role' => 'owner']);
-        DB::table('business_settings')->where('id', 1)->update(['owner_user_id' => $owner->id]);
         $wallet = Wallet::create([
             'created_by' => $owner->id,
             'name' => 'Kas Tunai',

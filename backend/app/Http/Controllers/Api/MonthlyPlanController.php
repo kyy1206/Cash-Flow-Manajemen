@@ -8,7 +8,6 @@ use App\Services\NotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class MonthlyPlanController extends Controller
@@ -20,7 +19,7 @@ class MonthlyPlanController extends Controller
             'year' => ['sometimes', 'integer', 'between:2000,2100'],
         ]);
 
-        $ownerId = (int) DB::table('business_settings')->where('id', 1)->value('owner_user_id');
+        $ownerId = (int) ($request->user()->business?->owner_user_id ?? $request->user()->id);
         $plans = MonthlyPlan::query()
             ->where('user_id', $ownerId)
             ->with('budgets.category')
@@ -41,7 +40,7 @@ class MonthlyPlanController extends Controller
             'total_budget' => ['required', 'numeric', 'decimal:0,2', 'min:0', 'max:9999999999999.99'],
         ]);
 
-        $ownerId = (int) DB::table('business_settings')->where('id', 1)->value('owner_user_id');
+        $ownerId = (int) ($request->user()->business?->owner_user_id ?? $request->user()->id);
         $plan = MonthlyPlan::query()
             ->where('user_id', $ownerId)
             ->where('month', $validated['month'])
@@ -70,7 +69,7 @@ class MonthlyPlanController extends Controller
 
     public function show(Request $request, MonthlyPlan $monthlyPlan): JsonResponse
     {
-        $ownerId = (int) DB::table('business_settings')->where('id', 1)->value('owner_user_id');
+        $ownerId = (int) ($request->user()->business?->owner_user_id ?? $request->user()->id);
         $plan = MonthlyPlan::query()
             ->where('user_id', $ownerId)
             ->with('budgets.category')

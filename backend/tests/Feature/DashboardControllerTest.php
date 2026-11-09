@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -49,6 +51,7 @@ class DashboardControllerTest extends TestCase
             ->assertJsonPath('data.plan.total_budget', 3000000)
             ->assertJsonPath('data.summary.budget_total', 3000000)
             ->assertJsonPath('data.summary.spent_total', 1850000)
+            ->assertJsonPath('data.summary.expense_today', 950000)
             ->assertJsonPath('data.summary.remaining', 1150000)
             ->assertJsonPath('data.summary.percentage', 61.7)
             ->assertJsonPath('data.summary.status', 'waspada')
@@ -56,6 +59,38 @@ class DashboardControllerTest extends TestCase
             ->assertJsonPath('data.budget_categories.0.spent', 900000)
             ->assertJsonPath('data.budget_categories.0.status', 'waspada')
             ->assertJsonCount(2, 'data.daily_spending');
+    }
+
+    public function test_supervisor_dashboard_includes_pending_request_total_and_preview(): void
+    {
+        $this->travelTo('2026-10-16 12:00:00');
+        Storage::fake('local');
+        $owner = User::factory()->create(['role' => 'owner']);
+        $staff = User::factory()->create(['role' => 'staff']);
+        $supervisor = User::factory()->create(['role' => 'supervisor']);
+        $wallet = $owner->wallets()->create([
+            'name' => 'Kas Tunai',
+            'type' => 'cash',
+            'opening_balance' => 100000,
+        ]);
+        $category = $owner->categories()->create(['name' => 'Bahan Baku', 'type' => 'expense']);
+
+        Sanctum::actingAs($staff);
+        $this->postJson('/api/expense-requests', [
+            'wallet_id' => $wallet->id,
+            'category_id' => $category->id,
+            'amount' => 380000,
+            'purpose' => 'Beli bahan baku',
+            'attachment' => UploadedFile::fake()->create('bukti.pdf', 100, 'application/pdf'),
+        ])->assertCreated();
+
+        Sanctum::actingAs($supervisor);
+        $this->getJson('/api/dashboard')->assertOk()
+            ->assertJsonPath('data.summary.pending_requests', 1)
+            ->assertJsonPath('data.summary.pending_requests_amount', 380000)
+            ->assertJsonPath('data.pending_requests_preview.0.purpose', 'Beli bahan baku')
+            ->assertJsonPath('data.pending_requests_preview.0.requester', $staff->name)
+            ->assertJsonPath('data.pending_requests_preview.0.has_attachment', true);
     }
 
     public function test_dashboard_limits_staff_activity_totals_to_their_own_transactions(): void

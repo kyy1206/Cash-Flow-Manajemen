@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Wallet extends Model
 {
+    use BelongsToBusiness;
+
     protected $fillable = [
         'created_by',
         'name',

@@ -6,10 +6,9 @@ import Register from './pages/Register';
 import BusinessDashboard from './pages/BusinessDashboard';
 import BusinessWorkspace from './pages/BusinessWorkspace';
 import Subscriptions from './pages/Subscriptions';
-import BudgetManagement from './pages/BudgetManagement';
-import CategoryManagement from './pages/CategoryManagement';
 import Reports from './pages/Reports';
 import NotificationHistory from './pages/NotificationHistory';
+import LandingPage from './pages/LandingPage';
 import './App.css';
 
 function App() {
@@ -35,6 +34,22 @@ function App() {
               element={<ProtectedRoute><BusinessWorkspace /></ProtectedRoute>}
             />
           ))}
+          <Route
+            path="/budgets"
+            element={
+              <ProtectedRoute roles={['owner', 'supervisor']}>
+                <BusinessWorkspace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/categories"
+            element={
+              <ProtectedRoute roles={['owner']}>
+                <BusinessWorkspace />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/expenses"
             element={
@@ -62,22 +77,6 @@ function App() {
             }
           />
           <Route
-            path="/budgets"
-            element={
-              <ProtectedRoute roles={['owner', 'supervisor']}>
-                <BudgetManagement />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/categories"
-            element={
-              <ProtectedRoute roles={['owner']}>
-                <CategoryManagement />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/reports"
             element={
               <ProtectedRoute>
@@ -93,7 +92,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthProvider>

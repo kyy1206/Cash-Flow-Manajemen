@@ -3,16 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class BusinessSettingController extends Controller
 {
-    public function show(): JsonResponse
+    public function show(Request $request): JsonResponse
     {
         return response()->json([
-            'data' => DB::table('business_settings')->where('id', 1)->first(),
+            'data' => Business::query()->findOrFail($request->user()->business_id),
         ]);
     }
 
@@ -23,8 +23,8 @@ class BusinessSettingController extends Controller
             'approval_threshold' => ['sometimes', 'nullable', 'numeric', 'decimal:0,2', 'gt:0', 'max:9999999999999.99'],
         ]);
 
-        DB::table('business_settings')->where('id', 1)->update($validated + ['updated_at' => now()]);
+        Business::query()->findOrFail($request->user()->business_id)->update($validated);
 
-        return $this->show();
+        return $this->show($request);
     }
 }

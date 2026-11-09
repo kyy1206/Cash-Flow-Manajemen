@@ -47,9 +47,9 @@ function Register() {
     <main className="setup-page">
       <form className="setup-card" onSubmit={submit}>
         <div className="setup-mark">BH</div>
-        <span className="setup-eyebrow">PENYIAPAN SATU KALI</span>
-        <h1>Buat akun Owner</h1>
-        <p>Akun Owner pertama mengatur usaha dan membuat akun Supervisor serta Staff.</p>
+        <span className="setup-eyebrow">DAFTAR USAHA BARU</span>
+        <h1>Buat akun Owner dan usaha</h1>
+        <p>Setiap usaha memiliki ruang kerja terpisah. Setelah terdaftar, Owner dapat menambahkan akun Supervisor dan Staff.</p>
         {error && <div className="setup-error" role="alert">{error}</div>}
         {setupRequired === null && <div className="setup-loading">Memeriksa status setup...</div>}
         <label>Nama Owner<input name="name" value={form.name} onChange={change} autoComplete="name" required /></label>
@@ -57,21 +57,21 @@ function Register() {
         <label>Nama usaha<input name="business_name" value={form.business_name} onChange={change} required /></label>
         <label>Password<input name="password" type="password" minLength="8" value={form.password} onChange={change} autoComplete="new-password" required /></label>
         <label>Konfirmasi password<input name="password_confirmation" type="password" minLength="8" value={form.password_confirmation} onChange={change} autoComplete="new-password" required /></label>
-        <button type="submit" disabled={saving || setupRequired !== true}>{saving ? 'Menyiapkan...' : 'Siapkan usaha'}</button>
+        <button type="submit" disabled={saving || setupRequired !== true}>{saving ? 'Membuat usaha...' : 'Buat akun dan usaha'}</button>
         <Link to="/login">Sudah memiliki akun? Masuk</Link>
       </form>
       <style>{`
         .setup-page { min-height: 100vh; display: grid; place-items: center; padding: 24px; box-sizing: border-box; background: #f5f7fb; color: #172033; font-family: inherit; }
         .setup-card { width: min(100%, 430px); display: grid; gap: 14px; padding: 30px; border: 1px solid #e8ebf1; border-radius: 14px; background: #fff; box-shadow: 0 12px 32px #0f172a0d; }
-        .setup-mark { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 11px; background: #5146e5; color: #fff; font-size: 13px; font-weight: 800; }
-        .setup-eyebrow { color: #5146e5; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+        .setup-mark { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 7px; background: #174bb8; color: #fff; font-size: 13px; font-weight: 800; }
+        .setup-eyebrow { color: #174bb8; font-size: 10px; font-weight: 800; }
         .setup-card h1 { margin: -8px 0 0; font-size: 24px; }
         .setup-card p { margin: -8px 0 4px; color: #718096; font-size: 13px; line-height: 1.5; }
         .setup-card label { display: grid; gap: 6px; color: #475569; font-size: 12px; font-weight: 650; }
         .setup-card input { box-sizing: border-box; width: 100%; min-height: 40px; padding: 9px 10px; border: 1px solid #dfe5ee; border-radius: 7px; font: inherit; }
-        .setup-card button { min-height: 42px; border: 0; border-radius: 8px; background: #5146e5; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+        .setup-card button { min-height: 42px; border: 0; border-radius: 5px; background: #174bb8; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
         .setup-card button:disabled { opacity: .55; cursor: wait; }
-        .setup-card > a { color: #5146e5; font-size: 12px; text-align: center; text-decoration: none; }
+        .setup-card > a { color: #174bb8; font-size: 12px; text-align: center; text-decoration: none; }
         .setup-error { padding: 10px; border: 1px solid #fecaca; border-radius: 7px; background: #fff1f2; color: #b91c1c; font-size: 12px; }
         .setup-loading { color: #718096; font-size: 12px; }
       `}</style>

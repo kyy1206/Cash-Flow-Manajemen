@@ -1,14 +1,14 @@
 {
   "id": "/",
-  "name": "Bocor Halus — Keuangan Pribadi",
+  "name": "Bocor Halus | Keuangan Usaha",
   "short_name": "Bocor Halus",
-  "description": "Catat pengeluaran, pantau budget, dan pahami laporan keuangan pribadi.",
+  "description": "Catat arus kas usaha, kelola persetujuan pengeluaran, dan pantau laporan keuangan.",
   "lang": "id",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f5f7fb",
-  "theme_color": "#5146e5",
+  "theme_color": "#174bb8",
   "icons": [
     {
       "src": "/pwa-icon.svg",

@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Transaction extends Model
 {
+    use BelongsToBusiness;
+
     protected $fillable = [
         'user_id',
         'budget_id',

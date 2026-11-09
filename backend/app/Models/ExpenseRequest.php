@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ExpenseRequest extends Model
 {
+    use BelongsToBusiness;
+
     protected $hidden = ['attachment_path'];
 
     protected $appends = ['has_attachment'];

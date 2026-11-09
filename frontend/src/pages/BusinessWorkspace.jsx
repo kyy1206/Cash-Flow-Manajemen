@@ -3,6 +3,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import api from '../services/api';
 import { notifyFinancialDataChanged } from '../services/financialDataEvents';
+import SupervisorFrame from '../components/SupervisorFrame';
+import BudgetManagement from './BudgetManagement';
+import CategoryManagement from './CategoryManagement';
 import './BusinessWorkspace.css';
 
 const today = () => {
@@ -27,10 +30,81 @@ const titles = {
   settings: 'Pengaturan Usaha',
   audit: 'Audit Trail',
   profile: 'Profil & Keamanan',
+  budgets: 'Anggaran Operasional',
+  categories: 'Kategori Arus Kas',
 };
 const roles = { owner: 'Owner', supervisor: 'Supervisor', staff: 'Staff' };
+const readCsv = (text) => {
+  const delimiter = (text.split(/\r?\n/, 1)[0].match(/;/g) ?? []).length
+    > (text.split(/\r?\n/, 1)[0].match(/,/g) ?? []).length ? ';' : ',';
+  return text.trim().split(/\r?\n/).map((line) => {
+    const cells = [];
+    let value = '';
+    let quoted = false;
+    for (let index = 0; index < line.length; index += 1) {
+      const character = line[index];
+      if (character === '"' && line[index + 1] === '"' && quoted) {
+        value += '"';
+        index += 1;
+      } else if (character === '"') quoted = !quoted;
+      else if (character === delimiter && !quoted) {
+        cells.push(value.trim());
+        value = '';
+      } else value += character;
+    }
+    cells.push(value.trim());
+    return cells;
+  }).filter((row) => row.some(Boolean));
+};
+const csvAmount = (value) => {
+  const raw = String(value ?? '').replace(/[^\d,.-]/g, '');
+  const normalized = raw.includes(',') && raw.includes('.')
+    ? raw.lastIndexOf(',') > raw.lastIndexOf('.') ? raw.replace(/\./g, '').replace(',', '.') : raw.replace(/,/g, '')
+    : /^[\d]+[.,]\d{3}$/.test(raw) ? raw.replace(/[.,]/g, '') : raw.replace(',', '.');
+  const amount = Number(normalized);
+  return raw && Number.isFinite(amount) ? Math.abs(amount) : null;
+};
+const csvDate = (value) => {
+  const text = String(value ?? '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  const match = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  return match ? `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}` : '';
+};
+const downloadCsv = (filename, headers, rows) => {
+  const escapeCell = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+  const content = [headers, ...rows].map((row) => row.map(escapeCell).join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([`\uFEFF${content}`], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
 
 function Sidebar({ user, section, onLogout }) {
+  const ownerGroups = [
+    { label: 'UTAMA', links: [
+      { to: '/dashboard', text: 'Dashboard', icon: '⌂' },
+      { to: '/transactions', text: 'Monitoring Transaksi', icon: '↕' },
+      { to: '/requests', text: 'Pengawasan Pengajuan', icon: '▣' },
+    ] },
+    { label: 'KAS & BUKU BESAR', links: [
+      { to: '/wallets', text: 'Kas & Rekening', icon: '▤' },
+      { to: '/debts', text: 'Utang & Piutang', icon: '⇄' },
+      { to: '/reconciliations', text: 'Rekonsiliasi & Koreksi', icon: '✓' },
+      { to: '/reports', text: 'Laporan Keuangan', icon: '▥' },
+    ] },
+    { label: 'MANAJEMEN & KONTROL', links: [
+      { to: '/budgets', text: 'Anggaran Operasional', icon: '◫' },
+      { to: '/categories', text: 'Kategori Arus Kas', icon: '＋' },
+      { to: '/users', text: 'Pengguna & Staf', icon: '♙' },
+      { to: '/audit', text: 'Audit Trail', icon: '≡' },
+    ] },
+    { label: 'SISTEM', links: [
+      { to: '/settings', text: 'Pengaturan & Approval', icon: '⚙' },
+      { to: '/profile', text: 'Profil & Keamanan', icon: '⚿' },
+    ] },
+  ];
   const links = [
     { to: '/dashboard', text: 'Dashboard', icon: '⌂', roles: ['owner', 'supervisor', 'staff'] },
     { to: '/transactions', text: 'Transaksi', icon: '↕', roles: ['owner', 'supervisor', 'staff'] },
@@ -49,13 +123,29 @@ function Sidebar({ user, section, onLogout }) {
   ].filter((link) => link.roles.includes(user?.role));
 
   return (
-    <aside className="dashboard-sidebar">
+    <aside className={`dashboard-sidebar ${user?.role === 'owner' ? 'owner-sidebar' : ''}`}>
       <Link to="/dashboard" className="dashboard-brand">
         <span className="dashboard-brand-mark">BH</span>
-        <span><strong>Bocor Halus</strong><small>KEUANGAN UMKM</small></span>
+        <span><strong>Bocor Halus</strong><small>{user?.role === 'owner' ? 'OWNER PORTAL' : 'KEUANGAN UMKM'}</small>
+          {user?.role === 'owner' && <small className="owner-brand-business">{user?.name}</small>}
+        </span>
       </Link>
       <nav className="dashboard-nav">
-        {links.map((link) => (
+        {user?.role === 'owner' ? ownerGroups.map((group) => (
+          <div className="owner-nav-group" key={group.label}>
+            <span className="owner-nav-label">{group.label}</span>
+            {group.links.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`dashboard-nav-link ${section === link.to.slice(1) ? 'active' : ''}`}
+                aria-current={section === link.to.slice(1) ? 'page' : undefined}
+              >
+                <span>{link.icon}</span>{link.text}
+              </Link>
+            ))}
+          </div>
+        )) : links.map((link) => (
           <Link
             key={link.to}
             to={link.to}
@@ -67,6 +157,7 @@ function Sidebar({ user, section, onLogout }) {
         ))}
       </nav>
       <div className="dashboard-sidebar-spacer" />
+      {user?.role === 'owner' && <div className="owner-security-status"><strong>◉ Status Sesi</strong><span>Akun Owner aktif</span></div>}
       <div className="dashboard-user">
         <span className="dashboard-avatar">{user?.name?.[0] ?? 'U'}</span>
         <span><strong>{user?.name}</strong><small>{roles[user?.role] ?? user?.email}</small></span>
@@ -97,6 +188,24 @@ function BusinessWorkspace() {
   const [processingReceipt, setProcessingReceipt] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [editingUserId, setEditingUserId] = useState(null);
+  const [editingWalletId, setEditingWalletId] = useState(null);
+  const [showWalletForm, setShowWalletForm] = useState(false);
+  const [showDebtForm, setShowDebtForm] = useState(false);
+  const [showReconciliationForm, setShowReconciliationForm] = useState(false);
+  const [debtPayment, setDebtPayment] = useState(null);
+  const [requestFilter, setRequestFilter] = useState('all');
+  const [requestSearch, setRequestSearch] = useState('');
+  const [reconciliationFilter, setReconciliationFilter] = useState('all');
+  const [statementWalletId, setStatementWalletId] = useState('');
+  const [statement, setStatement] = useState(null);
+  const [statementError, setStatementError] = useState('');
+  const [transfer, setTransfer] = useState({ wallet_id: '', destination_wallet_id: '', amount: '', date: today(), description: '' });
+  const [transferSaving, setTransferSaving] = useState(false);
+  const [pageBySection, setPageBySection] = useState({});
+  const [pageInfo, setPageInfo] = useState(null);
+  const page = pageBySection[section] ?? 1;
+  const changePage = (nextPage) => setPageBySection((current) => ({ ...current, [section]: nextPage }));
+  const shownPageInfo = pageInfo?.section === section ? pageInfo : null;
   const isOwner = user?.role === 'owner';
   const isSupervisor = user?.role === 'supervisor';
   const activeWallets = useMemo(() => wallets.filter((wallet) => wallet.is_active), [wallets]);
@@ -108,6 +217,11 @@ function BusinessWorkspace() {
   useEffect(() => {
     let active = true;
     const load = async () => {
+      if (['budgets', 'categories'].includes(section)) {
+        setLoading(false);
+        setError('');
+        return;
+      }
       setLoading(true);
       setError('');
       try {
@@ -117,12 +231,17 @@ function BusinessWorkspace() {
           audit: '/audit-logs',
           profile: '/profile',
         }[section] ?? `/${section}`;
-        const response = await api.get(endpoint);
+        const response = await api.get(endpoint, {
+          params: ['transactions', 'requests', 'debts', 'reconciliations', 'audit'].includes(section) ? { page } : undefined,
+        });
         const result = response.data.data;
         if (active) {
           setData(['settings', 'profile'].includes(section) ? result : Array.isArray(result) ? result : result?.data ?? []);
+          setPageInfo(result?.last_page ? {
+            section, currentPage: result.current_page, lastPage: result.last_page, total: result.total,
+          } : null);
         }
-        if (['transactions', 'requests', 'debts', 'reconciliations'].includes(section)) {
+        if (['transactions', 'requests', 'debts', 'reconciliations', 'wallets'].includes(section)) {
           const [walletResponse, categoryResponse] = await Promise.all([
             api.get('/wallets'),
             api.get('/categories'),
@@ -141,7 +260,7 @@ function BusinessWorkspace() {
 
     load();
     return () => { active = false; };
-  }, [section, refresh]);
+  }, [section, refresh, page]);
 
   const setField = (event) => {
     const { name, value, files, type } = event.target;
@@ -235,7 +354,11 @@ function BusinessWorkspace() {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       } else if (section === 'wallets') {
-        await api.post('/wallets', { ...form, opening_balance: Number(form.opening_balance) });
+        if (editingWalletId === null) {
+          await api.post('/wallets', { ...form, opening_balance: Number(form.opening_balance) });
+        } else {
+          await api.patch(`/wallets/${editingWalletId}`, { name: form.name, type: form.type });
+        }
       } else if (section === 'users') {
         if (editingUserId === null) {
           await api.post('/users', form);
@@ -275,6 +398,10 @@ function BusinessWorkspace() {
       formElement.reset();
       setForm({ transaction_type: 'income', date: today(), type: 'receivable' });
       setEditingUserId(null);
+      setEditingWalletId(null);
+      if (section === 'wallets') setShowWalletForm(false);
+      if (section === 'debts') setShowDebtForm(false);
+      if (section === 'reconciliations') setShowReconciliationForm(false);
       setReceipt(null);
       setRefresh((value) => value + 1);
     } catch (requestError) {
@@ -332,22 +459,123 @@ function BusinessWorkspace() {
   };
 
   const settleDebt = async (debt) => {
-    const walletId = activeWallets[0]?.id;
-    if (!walletId) {
+    if (!activeWallets.length) {
       setError('Tambahkan sumber dana aktif terlebih dahulu.');
       return;
     }
+    setDebtPayment({ id: debt.id, amount: String(debt.remaining_amount), wallet_id: String(activeWallets[0].id) });
+  };
+
+  const submitDebtPayment = async (event, debt) => {
+    event.preventDefault();
+    setError('');
     try {
       await api.post(`/debts/${debt.id}/settle`, {
-        wallet_id: walletId,
-        amount: Number(debt.remaining_amount),
+        wallet_id: Number(debtPayment.wallet_id),
+        amount: Number(debtPayment.amount),
         date: today(),
       });
       notifyFinancialDataChanged();
-      setNotice('Pembayaran utang/piutang dicatat.');
+      setNotice(Number(debtPayment.amount) < Number(debt.remaining_amount)
+        ? 'Pembayaran sebagian dicatat dan sisa saldo diperbarui.'
+        : 'Pembayaran lunas dicatat.');
+      setDebtPayment(null);
       setRefresh((value) => value + 1);
     } catch (requestError) {
       setError(errorMessage(requestError));
+    }
+  };
+
+  const toggleWallet = async (wallet) => {
+    setError('');
+    try {
+      await api.patch(`/wallets/${wallet.id}`, { is_active: !wallet.is_active });
+      setNotice(wallet.is_active ? 'Sumber dana dinonaktifkan.' : 'Sumber dana diaktifkan kembali.');
+      setRefresh((value) => value + 1);
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+    }
+  };
+
+  const transferFunds = async (event) => {
+    event.preventDefault();
+    setTransferSaving(true);
+    setError('');
+    try {
+      await api.post('/transactions', {
+        transaction_type: 'transfer',
+        ...transfer,
+        wallet_id: Number(transfer.wallet_id),
+        destination_wallet_id: Number(transfer.destination_wallet_id),
+        amount: Number(transfer.amount),
+      });
+      notifyFinancialDataChanged();
+      setNotice('Transfer internal berhasil dicatat dan saldo kedua rekening diperbarui.');
+      setTransfer({ wallet_id: '', destination_wallet_id: '', amount: '', date: today(), description: '' });
+      setRefresh((value) => value + 1);
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+    } finally {
+      setTransferSaving(false);
+    }
+  };
+
+  const importStatement = async (event) => {
+    const file = event.target.files?.[0];
+    setStatement(null);
+    setStatementError('');
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setStatementError('Ukuran file maksimal 5 MB.');
+      return;
+    }
+    try {
+      const csv = readCsv(await file.text());
+      const headers = csv[0].map((header) => header.replace(/^\uFEFF/, '').toLowerCase());
+      const dateIndex = headers.findIndex((header) => ['tanggal', 'tgl', 'date', 'transaction date'].includes(header));
+      const amountIndex = headers.findIndex((header) => ['nominal', 'amount', 'jumlah', 'mutasi', 'debit', 'debet', 'credit', 'kredit'].includes(header));
+      const descriptionIndex = headers.findIndex((header) => ['deskripsi', 'description', 'keterangan', 'narrative'].includes(header));
+      if (csv.length < 2 || dateIndex < 0 || amountIndex < 0) {
+        throw new Error('CSV harus memiliki baris data, kolom tanggal (date/tanggal), dan nominal/mutasi/debit/credit.');
+      }
+      const rows = csv.slice(1).map((cells, index) => ({
+        line: index + 2,
+        date: csvDate(cells[dateIndex]),
+        amount: csvAmount(cells[amountIndex]),
+        description: cells[descriptionIndex] || '—',
+      })).filter((row) => row.date && row.amount !== null);
+      if (!rows.length) throw new Error('Tidak ada baris mutasi dengan tanggal dan nominal yang valid.');
+      if (!statementWalletId) throw new Error('Pilih rekening yang akan dicocokkan terlebih dahulu.');
+
+      const dateFrom = rows.map((row) => row.date).sort()[0];
+      const dateTo = rows.map((row) => row.date).sort().at(-1);
+      const transactions = [];
+      let currentPage = 1;
+      let lastPage = 1;
+      do {
+        const response = await api.get('/transactions', {
+          params: { wallet_id: statementWalletId, date_from: dateFrom, date_to: dateTo, page: currentPage },
+        });
+        transactions.push(...(response.data.data.data ?? []));
+        lastPage = response.data.data.last_page ?? 1;
+        currentPage += 1;
+      } while (currentPage <= lastPage);
+
+      const used = new Set();
+      const compared = rows.map((row) => {
+        const matched = transactions.find((transaction) => String(transaction.date).slice(0, 10) === row.date
+          && Math.abs(Number(transaction.amount) - row.amount) < 0.01
+          && !used.has(transaction.id)
+          && (Number(transaction.wallet_id) === Number(statementWalletId)
+            || Number(transaction.destination_wallet_id) === Number(statementWalletId)));
+        if (matched) used.add(matched.id);
+        return { ...row, matched };
+      });
+      setStatement({ filename: file.name, rows: compared });
+    } catch (importError) {
+      setStatementError(importError.message || errorMessage(importError));
+    } finally {
+      event.target.value = '';
     }
   };
 
@@ -387,24 +615,57 @@ function BusinessWorkspace() {
     setForm({ transaction_type: 'income', date: today(), type: 'receivable' });
   };
 
-  const title = titles[section] ?? 'Keuangan Usaha';
+  const ownerTitles = {
+    wallets: 'Manajemen Kas & Rekening Usaha',
+    requests: 'Pengawasan Pengajuan Pengeluaran Staf',
+    debts: 'Pengelolaan Utang & Piutang Usaha',
+    reconciliations: 'Rekonsiliasi Kas, Koreksi & Audit Trail',
+  };
+  const title = isOwner ? ownerTitles[section] ?? titles[section] ?? 'Keuangan Usaha' : titles[section] ?? 'Keuangan Usaha';
+  const listData = Array.isArray(data) ? data : [];
+  const walletRows = section === 'wallets' ? listData : [];
+  const debtRows = section === 'debts' ? listData : [];
+  const requestRows = section === 'requests' ? listData : [];
+  const reconciliationRows = section === 'reconciliations' ? listData : [];
+  const visibleRequests = requestRows.filter((item) => (requestFilter === 'all' || item.status === requestFilter)
+    && `${item.requester?.name ?? ''} ${item.purpose ?? ''} ${item.description ?? ''}`.toLowerCase().includes(requestSearch.toLowerCase()));
+  const visibleReconciliations = reconciliationRows.filter((item) => reconciliationFilter === 'all' || item.status === reconciliationFilter);
+  const openBalance = (type) => debtRows.filter((item) => item.type === type && item.status === 'open')
+    .reduce((total, item) => total + Number(item.remaining_amount || 0), 0);
 
-  return (
-    <div className="dashboard-app business-app">
-      <Sidebar user={user} section={section} onLogout={logoutUser} />
-      <main className="dashboard-main business-main">
-        <header className="dashboard-topbar">
-          <div className="dashboard-welcome">
-            <span className="dashboard-eyebrow">{roles[user?.role]?.toUpperCase()} · BOCOR HALUS</span>
+  const workspaceContent = (
+    <>
+      {isOwner && <div className="owner-utilitybar">
+          <Link to="/dashboard" className="owner-utility-brand"><span>BH</span><strong>Bocor Halus</strong></Link>
+          <span className="owner-utility-divider" />
+          <span className="owner-utility-business">{user?.name} <b>• Data Usaha</b></span>
+          <span className="owner-sync-badge"><i /> Sesi Aktif</span>
+        </div>}
+        <header className={isSupervisor ? 'supervisor-page-heading' : 'dashboard-topbar'}>
+          <div className={isSupervisor ? undefined : 'dashboard-welcome'}>
+            <span className={isSupervisor ? 'supervisor-eyebrow' : 'dashboard-eyebrow'}>{isOwner ? '◈ KONTROL INTERNAL & AKUNTABILITAS' : `${roles[user?.role]?.toUpperCase()} · BOCOR HALUS`}</span>
             <h1>{title}</h1>
-            <p>Kelola dan pantau keuangan usaha dalam satu tempat.</p>
+            <p>{isOwner && section === 'requests'
+              ? 'Pantau efektivitas otorisasi pengeluaran, kepatuhan batas limit wewenang, dan riwayat audit.'
+              : isOwner && section === 'reconciliations'
+                ? 'Pengawasan integritas catatan sistem vs fisik uang, penanganan selisih, serta riwayat perubahan data tak terhapus.'
+                : isOwner && section === 'debts'
+                  ? 'Kendalikan komitmen pembayaran supplier dan percepatan penagihan piutang pelanggan korporat.'
+                  : isOwner && section === 'wallets'
+                    ? 'Kelola brankas kas fisik toko, rekening bank operasional, dan mutasi saldo antar-dompet satu UMKM.'
+                    : 'Kelola dan pantau keuangan usaha dalam satu tempat.'}</p>
           </div>
-          <Link className="dashboard-primary-button" to="/transactions">+ Catat transaksi</Link>
+          {section !== 'requests' && <div className={isSupervisor ? 'supervisor-page-actions' : undefined}>
+            <Link className={isSupervisor ? 'supervisor-button primary' : 'dashboard-primary-button'} to="/transactions">{isOwner ? '+ Catat Kas Langsung' : '+ Catat transaksi'}</Link>
+          </div>}
         </header>
 
         {error && <div className="dashboard-message error" role="alert">{error}</div>}
         {notice && <div className="dashboard-message info" role="status">{notice}</div>}
         {loading && <div className="dashboard-message loading">Memuat data...</div>}
+
+        {section === 'budgets' && <BudgetManagement />}
+        {section === 'categories' && isOwner && <CategoryManagement />}
 
         {section === 'transactions' && (
           <>
@@ -458,32 +719,94 @@ function BusinessWorkspace() {
             </form>
             <DataTable headers={isOwner
               ? ['Tanggal', 'Jenis', 'Keterangan', 'Kategori', 'Sumber dana', 'Nominal', 'Aksi']
-              : ['Tanggal', 'Jenis', 'Keterangan', 'Kategori', 'Sumber dana', 'Nominal']} rows={data.map((item) => [
+              : ['Tanggal', 'Jenis', 'Keterangan', 'Kategori', 'Sumber dana', 'Nominal']} rows={listData.map((item) => [
               item.date, item.transaction_type, item.description || item.merchant || '—', item.category?.name ?? '—',
               item.wallet?.name ?? '—', currency(item.amount),
               ...(isOwner ? [item.reversal || item.reversal_of_id
                 ? 'Sudah dikoreksi'
                 : <button className="business-button secondary" onClick={() => reverseTransaction(item)}>Koreksi</button>] : []),
             ])} />
+            <PageControls pageInfo={shownPageInfo} onPageChange={changePage} />
           </>
         )}
 
         {section === 'wallets' && (
           <>
-            {isOwner && <form className="business-panel business-form" onSubmit={submit}>
-              <h2>Tambah kas atau rekening</h2>
+            {isOwner && showWalletForm && <form className="business-panel business-form owner-editor" onSubmit={submit}>
+              <h2>{editingWalletId === null ? 'Tambah kas atau rekening' : 'Ubah kas atau rekening'}</h2>
               <div className="business-form-grid">
                 <Field label="Nama sumber dana"><input name="name" value={form.name ?? ''} onChange={setField} required /></Field>
                 <Field label="Jenis"><select name="type" value={form.type ?? 'cash'} onChange={setField}><option value="cash">Kas tunai</option><option value="bank">Rekening bank</option><option value="other">Lainnya</option></select></Field>
-                <Field label="Saldo awal"><input name="opening_balance" type="number" min="0" step="0.01" value={form.opening_balance ?? ''} onChange={setField} required /></Field>
+                {editingWalletId === null && <Field label="Saldo awal"><input name="opening_balance" type="number" min="0" step="0.01" value={form.opening_balance ?? ''} onChange={setField} required /></Field>}
               </div>
-              <button className="business-button" disabled={saving}>Tambah sumber dana</button>
+              <button className="business-button" disabled={saving}>{saving ? 'Menyimpan...' : editingWalletId === null ? 'Tambah sumber dana' : 'Simpan perubahan'}</button>
+              {editingWalletId !== null && <button className="business-button secondary" type="button" onClick={() => {
+                setEditingWalletId(null);
+                setShowWalletForm(false);
+                setForm({ transaction_type: 'income', date: today(), type: 'cash', opening_balance: '' });
+              }}>Batal</button>}
             </form>}
-            <div className="business-card-grid">{data.map((wallet) => <article className="business-panel business-balance-card" key={wallet.id}>
+            {isOwner && <div className="owner-page-heading">
+              <div><span className="owner-kicker">KAS & BUKU BESAR</span><h2>Daftar Sumber Dana & Brankas Kas</h2><p>Pantau saldo kas fisik dan rekening yang terhubung.</p></div>
+              <div className="owner-heading-actions">
+                <button className="business-button secondary" type="button" onClick={() => document.getElementById('owner-statement')?.scrollIntoView({ behavior: 'smooth' })}>↻ Sinkronisasi CSV</button>
+                <button className="business-button secondary" type="button" onClick={() => document.getElementById('owner-transfer')?.scrollIntoView({ behavior: 'smooth' })}>⇄ Transfer Antar-Kas</button>
+                <button className="business-button" type="button" onClick={() => {
+                  setEditingWalletId(null);
+                  setForm({ transaction_type: 'income', date: today(), type: 'cash', opening_balance: '' });
+                  setShowWalletForm((visible) => !visible);
+                }}>＋ Tambah Sumber Dana</button>
+              </div>
+            </div>}
+            <div className="owner-metrics">
+              <article><span>Total saldo likuid</span><strong>{currency(walletRows.reduce((sum, item) => sum + Number(item.balance || 0), 0))}</strong></article>
+              <article><span>Kas fisik</span><strong>{currency(walletRows.filter((item) => item.type === 'cash').reduce((sum, item) => sum + Number(item.balance || 0), 0))}</strong></article>
+              <article><span>Rekening bank & lainnya</span><strong>{currency(walletRows.filter((item) => item.type !== 'cash').reduce((sum, item) => sum + Number(item.balance || 0), 0))}</strong></article>
+              <article><span>Sumber dana aktif</span><strong>{walletRows.filter((item) => item.is_active).length} Rekening</strong></article>
+            </div>
+            <section className="business-panel owner-section owner-wallet-list">
+            <div className="business-section-heading"><div><h2>Daftar sumber dana</h2><small>Saldo berdasarkan mutasi yang sudah dicatat.</small></div></div>
+            <div className="business-card-grid">{walletRows.map((wallet) => <article className="business-panel business-balance-card" key={wallet.id}>
               <span>{wallet.type === 'cash' ? 'Kas Tunai' : wallet.type === 'bank' ? 'Rekening Bank' : 'Sumber Dana'}</span>
               <h2>{wallet.name}</h2><strong>{currency(wallet.balance)}</strong>
-              {!wallet.is_active && <small>Nonaktif</small>}
+              <small>{wallet.is_active ? 'Aktif' : 'Nonaktif'}</small>
+              {isOwner && <div className="business-actions">
+                <button className="business-button secondary" type="button" onClick={() => {
+                  setEditingWalletId(wallet.id);
+                  setForm({ name: wallet.name, type: wallet.type });
+                  setShowWalletForm(true);
+                }}>Ubah</button>
+                <button className="business-button secondary" type="button" onClick={() => toggleWallet(wallet)}>{wallet.is_active ? 'Nonaktifkan' : 'Aktifkan'}</button>
+              </div>}
             </article>)}</div>
+            </section>
+            {isOwner && <form id="owner-transfer" className="business-panel business-form owner-section owner-editor" onSubmit={transferFunds}>
+              <h2>Transfer antar-kas dan rekening</h2>
+              <p>Dicatat sebagai transfer internal, bukan pemasukan atau pengeluaran usaha.</p>
+              <div className="business-form-grid">
+                <Field label="Sumber"><select value={transfer.wallet_id} onChange={(event) => setTransfer((value) => ({ ...value, wallet_id: event.target.value }))} required><option value="">Pilih sumber</option>{activeWallets.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
+                <Field label="Tujuan"><select value={transfer.destination_wallet_id} onChange={(event) => setTransfer((value) => ({ ...value, destination_wallet_id: event.target.value }))} required><option value="">Pilih tujuan</option>{activeWallets.filter((item) => String(item.id) !== transfer.wallet_id).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
+                <Field label="Nominal"><input type="number" min="1" step="0.01" value={transfer.amount} onChange={(event) => setTransfer((value) => ({ ...value, amount: event.target.value }))} required /></Field>
+                <Field label="Tanggal"><input type="date" value={transfer.date} onChange={(event) => setTransfer((value) => ({ ...value, date: event.target.value }))} required /></Field>
+                <Field label="Keterangan"><input value={transfer.description} onChange={(event) => setTransfer((value) => ({ ...value, description: event.target.value }))} /></Field>
+              </div>
+              <button className="business-button" disabled={transferSaving || activeWallets.length < 2}>{transferSaving ? 'Mencatat...' : 'Catat transfer'}</button>
+            </form>}
+            {isOwner && <section id="owner-statement" className="business-panel business-form owner-section owner-editor">
+              <h2>Cocokkan mutasi dari CSV</h2>
+              <p>Impor dan pencocokan dilakukan di browser; tidak terkoneksi langsung ke bank.</p>
+              <div className="business-form-grid">
+                <Field label="Kas/rekening"><select value={statementWalletId} onChange={(event) => setStatementWalletId(event.target.value)}><option value="">Pilih sumber dana</option>{walletRows.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
+                <Field label="File mutasi CSV (maks. 5 MB)"><input type="file" accept=".csv,text/csv" onChange={importStatement} /></Field>
+              </div>
+              {statementError && <p className="owner-error" role="alert">{statementError}</p>}
+              {statement && <><p className="business-muted">{statement.filename}: {statement.rows.filter((row) => row.matched).length} cocok, {statement.rows.filter((row) => !row.matched).length} perlu diperiksa.</p>
+                <DataTable headers={['Baris', 'Tanggal', 'Deskripsi', 'Nominal', 'Pencocokan']} rows={statement.rows.slice(0, 100).map((row) => [
+                  row.line, row.date, row.description, currency(row.amount),
+                  row.matched ? `Cocok: ${row.matched.description || row.matched.merchant || row.matched.transaction_type}` : 'Belum ada transaksi cocok',
+                ])} />
+              </>}
+            </section>}
           </>
         )}
 
@@ -502,7 +825,28 @@ function BusinessWorkspace() {
               </div>
               <button className="business-button" disabled={saving}>Kirim pengajuan</button>
             </form>}
-            <div className="business-list">{data.map((item) => <article className="business-panel business-list-item" key={item.id}>
+            <div className="owner-metrics">
+              <article><span>Total pengajuan</span><strong>{shownPageInfo?.total ?? requestRows.length}</strong></article>
+              <article><span>Menunggu keputusan · halaman ini</span><strong>{requestRows.filter((item) => item.status === 'pending').length}</strong></article>
+              <article><span>Disetujui · halaman ini</span><strong>{requestRows.filter((item) => item.status === 'approved').length}</strong></article>
+              <article><span>Ditolak/dibayar · halaman ini</span><strong>{requestRows.filter((item) => ['rejected', 'paid'].includes(item.status)).length}</strong></article>
+            </div>
+            {isOwner && <div className="owner-protocol"><strong>◈ Protokol Pemisahan Otoritas Pemilik</strong><span>Owner memantau dan mengunduh bukti. Keputusan persetujuan atau penolakan tetap dilakukan Supervisor sesuai izin yang berlaku.</span></div>}
+            <section className="business-panel owner-section">
+              <div className="owner-filter-row owner-request-toolbar">
+                <div><h2>Pengajuan Bulan Ini</h2><small>Pantau status, bukti pendukung, dan catatan keputusan.</small></div>
+                <Field label="Cari pemohon/keperluan"><input value={requestSearch} onChange={(event) => setRequestSearch(event.target.value)} placeholder="Nama atau keperluan" /></Field>
+                <Field label="Status"><select value={requestFilter} onChange={(event) => setRequestFilter(event.target.value)}><option value="all">Semua</option><option value="pending">Menunggu</option><option value="approved">Disetujui</option><option value="rejected">Ditolak</option><option value="paid">Dibayar</option></select></Field>
+              </div>
+            {isOwner ? <DataTable headers={['ID & WAKTU', 'PEMOHON', 'KEPERLUAN & KATEGORI', 'NOMINAL', 'STATUS & SUMBER DANA', 'VERIFIKASI / ALASAN', 'AKSI']} rows={visibleRequests.map((item) => [
+              <><strong>REQ-{String(item.id).padStart(4, '0')}</strong><small>{item.created_at ? new Date(item.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</small></>,
+              <><strong>{item.requester?.name ?? 'Pengguna'}</strong><small>{item.requester?.role ?? 'Staff'}</small></>,
+              <><strong>{item.purpose}</strong><small>{item.category?.name ?? 'Tanpa kategori'}</small></>,
+              <strong className="owner-amount">{currency(item.amount)}</strong>,
+              <><span className={`business-status status-${item.status}`}>{item.status}</span><small>{item.wallet?.name ?? '—'}</small></>,
+              <small>{item.decision_note || (item.status === 'pending' ? 'Menunggu keputusan Supervisor' : item.transaction_id ? `Transaksi #${item.transaction_id}` : 'Tidak ada catatan')}</small>,
+              item.has_attachment ? <button className="business-button secondary" type="button" onClick={() => downloadEvidence(item)}>↓ Bukti</button> : '—',
+            ])} /> : <div className="business-list">{visibleRequests.map((item) => <article className="business-panel business-list-item" key={item.id}>
               <div><strong>{item.purpose}</strong><span>{item.requester?.name} · {item.category?.name ?? 'Tanpa kategori'} · {item.wallet?.name}</span><small>{item.description}</small></div>
               <div className="business-request-value"><strong>{currency(item.amount)}</strong><span className={`business-status status-${item.status}`}>{item.status}</span></div>
               {item.has_attachment && <button className="business-button secondary" onClick={() => downloadEvidence(item)}>Unduh bukti</button>}
@@ -513,7 +857,9 @@ function BusinessWorkspace() {
               {user?.role === 'staff' && item.status === 'approved' && <button className="business-button" onClick={() => payRequest(item)}>Catat sudah dibayar</button>}
               {item.decision_note && <small className="business-decision-note">Catatan: {item.decision_note}</small>}
               {item.transaction_id && <small>Transaksi #{item.transaction_id} · saldo sudah diperbarui</small>}
-            </article>)}</div>
+            </article>)}{!visibleRequests.length && <p className="business-muted">Tidak ada pengajuan yang sesuai.</p>}</div>}
+            <PageControls pageInfo={shownPageInfo} onPageChange={changePage} />
+            </section>
           </>
         )}
 
@@ -532,7 +878,7 @@ function BusinessWorkspace() {
               <button className="business-button" disabled={saving}>{editingUserId === null ? 'Buat pengguna' : 'Simpan perubahan'}</button>
               {editingUserId !== null && <button className="business-button secondary" type="button" onClick={cancelUserEdit}>Batal</button>}
             </form>
-            <DataTable headers={['Nama', 'Email', 'Role', 'Status', 'Aksi']} rows={data.map((account) => [
+            <DataTable headers={['Nama', 'Email', 'Role', 'Status', 'Aksi']} rows={listData.map((account) => [
               account.name, account.email, roles[account.role], account.is_active ? 'Aktif' : 'Nonaktif',
               <div className="business-actions">
                 <button className="business-button secondary" onClick={() => editUser(account)}>Ubah</button>
@@ -544,7 +890,15 @@ function BusinessWorkspace() {
 
         {section === 'debts' && (
           <>
-            <form className="business-panel business-form" onSubmit={submit}>
+            {isOwner && <div className="owner-page-heading">
+              <div><span className="owner-kicker">BUKU PIUTANG & LIABILITAS</span><h2>Ringkasan Komitmen & Penagihan</h2><p>Kendalikan komitmen pembayaran supplier dan percepatan penagihan piutang.</p></div>
+              <div className="owner-heading-actions">
+                <button className="business-button secondary" type="button" onClick={() => document.getElementById('owner-debt-ledger')?.scrollIntoView({ behavior: 'smooth' })}>⌕ Lihat Buku Besar</button>
+                <button className="business-button" type="button" onClick={() => { setForm((current) => ({ ...current, type: 'payable' })); setShowDebtForm(true); }}>＋ Catat Utang Baru</button>
+                <button className="business-button secondary" type="button" onClick={() => { setForm((current) => ({ ...current, type: 'receivable' })); setShowDebtForm(true); }}>▤ Catat Piutang Baru</button>
+              </div>
+            </div>}
+            {(!isOwner || showDebtForm) && <form className="business-panel business-form owner-editor" onSubmit={submit}>
               <h2>Catat utang atau piutang</h2>
               <p>Pencatatan saldo kewajiban/tagihan tidak mengubah saldo kas sampai pembayaran diterima atau dilakukan.</p>
               <div className="business-form-grid">
@@ -554,19 +908,70 @@ function BusinessWorkspace() {
                 <Field label="Jatuh tempo"><input name="due_date" type="date" value={form.due_date ?? ''} onChange={setField} /></Field>
               </div>
               <button className="business-button" disabled={saving}>Simpan</button>
-            </form>
-            <DataTable headers={['Jenis', 'Pihak', 'Jatuh tempo', 'Sisa', 'Status', '']} rows={data.map((debt) => [
+              {isOwner && <button className="business-button secondary" type="button" onClick={() => setShowDebtForm(false)}>Batal</button>}
+            </form>}
+            <div className="owner-metrics">
+              <article><span>Piutang terbuka · halaman ini</span><strong>{currency(openBalance('receivable'))}</strong></article>
+              <article><span>Utang terbuka · halaman ini</span><strong>{currency(openBalance('payable'))}</strong></article>
+              <article><span>Posisi netto · halaman ini</span><strong>{currency(openBalance('receivable') - openBalance('payable'))}</strong></article>
+              <article><span>Jatuh tempo lewat · halaman ini</span><strong>{debtRows.filter((item) => item.status === 'open' && item.due_date && String(item.due_date).slice(0, 10) < today()).length}</strong></article>
+            </div>
+            {isOwner ? <div id="owner-debt-ledger" className="owner-debt-columns">{[
+              { type: 'receivable', title: 'Buku Piutang Pelanggan (Receivables)', icon: '▣' },
+              { type: 'payable', title: 'Buku Utang Supplier (Payables)', icon: '▤' },
+            ].map((group) => {
+              const rows = debtRows.filter((item) => item.type === group.type);
+              return <section className="business-panel owner-debt-column" key={group.type}>
+                <div className="business-section-heading"><div><h2>{group.icon} {group.title}</h2><small>{rows.length} tagihan tercatat</small></div></div>
+                <div className="owner-debt-list">{rows.map((debt) => <article className="owner-debt-card" key={debt.id}>
+                  <div className="owner-debt-card-heading"><div><strong>{debt.counterparty}</strong><small>{debt.type === 'receivable' ? 'Pelanggan' : 'Supplier'} · #{debt.id}</small></div><span className={`business-status status-${debt.status}`}>{debt.status}</span></div>
+                  <div className="owner-debt-amount"><strong>{currency(debt.remaining_amount)}</strong><small>dari {currency(debt.amount)}</small></div>
+                  <div className="owner-debt-meta"><span>Jatuh tempo</span><strong>{debt.due_date ?? 'Belum ditentukan'}</strong></div>
+                  {debt.status === 'open' && activeWallets.length > 0 && (debtPayment?.id === debt.id
+                    ? <form className="owner-payment-form" onSubmit={(event) => submitDebtPayment(event, debt)}>
+                      <select aria-label="Sumber dana" value={debtPayment.wallet_id} onChange={(event) => setDebtPayment((value) => ({ ...value, wallet_id: event.target.value }))}>{activeWallets.map((wallet) => <option key={wallet.id} value={wallet.id}>{wallet.name}</option>)}</select>
+                      <input aria-label="Nominal pembayaran" type="number" min="0.01" max={debt.remaining_amount} step="0.01" value={debtPayment.amount} onChange={(event) => setDebtPayment((value) => ({ ...value, amount: event.target.value }))} required />
+                      <button className="business-button" type="submit">Catat</button>
+                      <button className="business-button secondary" type="button" onClick={() => setDebtPayment(null)}>Batal</button>
+                    </form>
+                    : <button className="business-button secondary" onClick={() => settleDebt(debt)}>＋ Catat Pembayaran</button>)}
+                </article>)}
+                {!rows.length && <p className="business-muted">Belum ada data pada buku ini.</p>}</div>
+              </section>;
+            })}</div> : <section className="business-panel owner-section">
+            <div className="business-section-heading"><div><h2>Buku utang & piutang</h2><small>Pembayaran dicatat ke ledger dan saldo diperbarui.</small></div></div>
+            <DataTable headers={['Jenis', 'Pihak', 'Jatuh tempo', 'Sisa', 'Status', '']} rows={debtRows.map((debt) => [
               debt.type === 'receivable' ? 'Piutang' : 'Utang', debt.counterparty, debt.due_date ?? '—',
               currency(debt.remaining_amount), debt.status,
-              debt.status === 'open' && activeWallets.length > 0 ? <button className="business-button secondary" onClick={() => settleDebt(debt)}>Lunasi penuh</button> : '—',
+              debt.status === 'open' && activeWallets.length > 0 ? (
+                debtPayment?.id === debt.id ? <form className="owner-payment-form" onSubmit={(event) => submitDebtPayment(event, debt)}>
+                  <select aria-label="Sumber dana" value={debtPayment.wallet_id} onChange={(event) => setDebtPayment((value) => ({ ...value, wallet_id: event.target.value }))}>{activeWallets.map((wallet) => <option key={wallet.id} value={wallet.id}>{wallet.name}</option>)}</select>
+                  <input aria-label="Nominal pembayaran" type="number" min="0.01" max={debt.remaining_amount} step="0.01" value={debtPayment.amount} onChange={(event) => setDebtPayment((value) => ({ ...value, amount: event.target.value }))} required />
+                  <button className="business-button" type="submit">Catat</button>
+                  <button className="business-button secondary" type="button" onClick={() => setDebtPayment(null)}>Batal</button>
+                </form> : <button className="business-button secondary" onClick={() => settleDebt(debt)}>Catat pembayaran</button>
+              ) : '—',
             ])} />
+            <PageControls pageInfo={shownPageInfo} onPageChange={changePage} />
+            </section>}
           </>
         )}
 
         {section === 'reconciliations' && (
           <>
-            <form className="business-panel business-form" onSubmit={submit}>
+            {isOwner && <div className="owner-page-heading">
+              <div><span className="owner-kicker">KONTROL INTERNAL & AKUNTABILITAS</span><h2>Rekonsiliasi Kas & Audit Trail</h2><p>Pengawasan integritas catatan sistem vs fisik uang dan penanganan selisih.</p></div>
+              <div className="owner-heading-actions">
+                <button className="business-button secondary" type="button" onClick={() => {
+                  const rows = reconciliationRows.map((item) => [item.reconciled_at, item.wallet?.name, item.system_balance, item.counted_balance, item.difference, item.status, item.creator?.name, item.reviewer?.name]);
+                  downloadCsv('rekonsiliasi-kas.csv', ['Tanggal', 'Kas/Rekening', 'Saldo Sistem', 'Saldo Hitung', 'Selisih', 'Status', 'Pencatat', 'Reviewer'], rows);
+                }}>↓ Ekspor Kepatuhan</button>
+                <button className="business-button" type="button" onClick={() => setShowReconciliationForm((visible) => !visible)}>＋ Buat Rekonsiliasi</button>
+              </div>
+            </div>}
+            {(!isOwner || showReconciliationForm) && <form className="business-panel business-form owner-editor" onSubmit={submit}>
               <h2>Input hasil hitung kas/rekening</h2>
+              <p>Pengajuan rekonsiliasi tidak mengubah saldo; hasilnya menunggu review sesuai izin role.</p>
               <div className="business-form-grid">
                 <Field label="Kas/rekening"><select name="wallet_id" value={form.wallet_id ?? ''} onChange={setField} required><option value="">Pilih sumber dana</option>{activeWallets.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
                 <Field label="Tanggal"><input name="reconciled_at" type="date" value={form.reconciled_at ?? today()} onChange={setField} required /></Field>
@@ -574,12 +979,26 @@ function BusinessWorkspace() {
                 <Field label="Catatan"><input name="notes" value={form.notes ?? ''} onChange={setField} /></Field>
               </div>
               <button className="business-button" disabled={saving}>Kirim untuk review</button>
-            </form>
-            <DataTable headers={['Tanggal', 'Sumber dana', 'Saldo sistem', 'Hasil hitung', 'Selisih', 'Status', '']} rows={data.map((item) => [
+              {isOwner && <button className="business-button secondary" type="button" onClick={() => setShowReconciliationForm(false)}>Batal</button>}
+            </form>}
+            <div className="owner-metrics">
+              <article><span>Jumlah rekonsiliasi</span><strong>{shownPageInfo?.total ?? reconciliationRows.length}</strong></article>
+              <article><span>Menunggu review · halaman ini</span><strong>{reconciliationRows.filter((item) => item.status === 'pending').length}</strong></article>
+              <article><span>Sudah direview · halaman ini</span><strong>{reconciliationRows.filter((item) => item.status === 'reviewed').length}</strong></article>
+              <article><span>Selisih · halaman ini</span><strong>{currency(reconciliationRows.reduce((total, item) => total + Number(item.difference || 0), 0))}</strong></article>
+            </div>
+            <section className="business-panel owner-section">
+            <div className="owner-filter-row">
+              <div><h2>Arsip Hasil Hitung Kas</h2><small>Selisih tidak mengubah saldo sampai dicatat melalui transaksi.</small></div>
+              <Field label="Status"><select value={reconciliationFilter} onChange={(event) => setReconciliationFilter(event.target.value)}><option value="all">Semua</option><option value="pending">Menunggu</option><option value="reviewed">Direview</option></select></Field>
+            </div>
+            <DataTable headers={['Tanggal', 'Sumber dana', 'Saldo sistem', 'Hasil hitung', 'Selisih', 'Status', 'Pencatat/reviewer', '']} rows={visibleReconciliations.map((item) => [
               item.reconciled_at, item.wallet?.name, currency(item.system_balance), currency(item.counted_balance),
-              currency(item.difference), item.status,
+              currency(item.difference), item.status, `${item.creator?.name ?? 'Pengguna'}${item.reviewer?.name ? ` / ${item.reviewer.name}` : ''}`,
               isSupervisor && item.status === 'pending' ? <button className="business-button secondary" onClick={() => reviewReconciliation(item.id)}>Review</button> : '—',
             ])} />
+            <PageControls pageInfo={shownPageInfo} onPageChange={changePage} />
+            </section>
           </>
         )}
 
@@ -605,10 +1024,24 @@ function BusinessWorkspace() {
           <button className="business-button" disabled={saving}>Simpan profil</button>
         </form>}
 
-        {section === 'audit' && isOwner && <DataTable headers={['Waktu', 'Pengguna', 'Aksi', 'Deskripsi']} rows={data.map((log) => [
-          new Date(log.created_at).toLocaleString('id-ID'), log.user?.name ?? 'Sistem', log.action, log.description,
-        ])} />}
-      </main>
+        {section === 'audit' && isOwner && <section className="business-panel owner-section">
+          <h2>Audit Trail</h2>
+          <DataTable headers={['Waktu', 'Pengguna', 'Aksi', 'Deskripsi']} rows={listData.map((log) => [
+            new Date(log.created_at).toLocaleString('id-ID'), log.user?.name ?? 'Sistem', log.action, log.description,
+          ])} />
+          <PageControls pageInfo={shownPageInfo} onPageChange={changePage} />
+        </section>}
+    </>
+  );
+
+  if (isSupervisor) {
+    return <SupervisorFrame active={section} onLogout={logoutUser}>{workspaceContent}</SupervisorFrame>;
+  }
+
+  return (
+    <div className={`dashboard-app business-app ${isOwner ? `owner-workspace owner-${section}` : ''}`}>
+      <Sidebar user={user} section={section} onLogout={logoutUser} />
+      <main className="dashboard-main business-main">{workspaceContent}</main>
     </div>
   );
 }
@@ -624,6 +1057,19 @@ function DataTable({ headers, rows }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+function PageControls({ pageInfo, onPageChange }) {
+  if (!pageInfo || pageInfo.lastPage <= 1) return null;
+  return (
+    <nav className="owner-pagination" aria-label="Halaman data">
+      <span>Halaman {pageInfo.currentPage} dari {pageInfo.lastPage} · {pageInfo.total} data</span>
+      <div>
+        <button className="business-button secondary" type="button" disabled={pageInfo.currentPage <= 1} onClick={() => onPageChange(pageInfo.currentPage - 1)}>Sebelumnya</button>
+        <button className="business-button secondary" type="button" disabled={pageInfo.currentPage >= pageInfo.lastPage} onClick={() => onPageChange(pageInfo.currentPage + 1)}>Berikutnya</button>
+      </div>
+    </nav>
   );
 }
 

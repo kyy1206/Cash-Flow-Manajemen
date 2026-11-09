@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MonthlyPlan extends Model
 {
+    use BelongsToBusiness;
+
     protected $fillable = ['user_id', 'month', 'year', 'total_budget'];
 
     protected $casts = [

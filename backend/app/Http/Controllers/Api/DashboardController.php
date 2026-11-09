@@ -12,7 +12,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -35,10 +34,17 @@ class DashboardController extends Controller
                 $request->user()->isRole('staff'),
                 fn (Builder $query) => $query->where('user_id', $request->user()->id),
             );
+        $todayTransactions = Transaction::query()
+            ->where('financial_status', 'posted')
+            ->whereDate('date', $today->toDateString())
+            ->when(
+                $request->user()->isRole('staff'),
+                fn (Builder $query) => $query->where('user_id', $request->user()->id),
+            );
 
         $incomeTotal = (float) (clone $transactions)->where('transaction_type', 'income')->sum('amount');
         $expenseTotal = (float) (clone $transactions)->where('transaction_type', 'expense')->sum('amount');
-        $ownerId = (int) DB::table('business_settings')->where('id', 1)->value('owner_user_id');
+        $ownerId = (int) ($request->user()->business?->owner_user_id ?? $request->user()->id);
         $plan = MonthlyPlan::query()->where('user_id', $ownerId)->where('month', $month)->where('year', $year)
             ->with('budgets.category')->first();
         $budgetCategories = $plan?->budgets->map(function ($budget) use ($start, $end, $request): array {
@@ -64,9 +70,26 @@ class DashboardController extends Controller
         }) ?? collect();
         $wallets = Wallet::query()->where('is_active', true)->orderBy('name')->get();
         $balances = $walletBalances->balances($wallets);
-        $pendingRequests = ExpenseRequest::query()->where('status', 'pending')
-            ->when($request->user()->isRole('staff'), fn (Builder $query) => $query->where('requested_by', $request->user()->id))
-            ->count();
+        $pendingRequestsQuery = ExpenseRequest::query()->where('status', 'pending')
+            ->when($request->user()->isRole('staff'), fn (Builder $query) => $query->where('requested_by', $request->user()->id));
+        $pendingRequests = (clone $pendingRequestsQuery)->count();
+        $pendingRequestsAmount = (float) (clone $pendingRequestsQuery)->sum('amount');
+        $pendingRequestsPreview = (clone $pendingRequestsQuery)
+            ->with(['requester:id,name', 'category:id,name', 'wallet:id,name'])
+            ->latest()
+            ->limit(4)
+            ->get()
+            ->map(fn (ExpenseRequest $expenseRequest): array => [
+                'id' => $expenseRequest->id,
+                'purpose' => $expenseRequest->purpose,
+                'description' => $expenseRequest->description,
+                'amount' => (float) $expenseRequest->amount,
+                'created_at' => $expenseRequest->created_at,
+                'requester' => $expenseRequest->requester?->name,
+                'category' => $expenseRequest->category?->name,
+                'wallet' => $expenseRequest->wallet?->name,
+                'has_attachment' => $expenseRequest->has_attachment,
+            ]);
         $budgetTotal = (float) ($plan?->total_budget ?? 0);
         $remaining = $budgetTotal - $expenseTotal;
         $percentage = $budgetTotal > 0
@@ -109,9 +132,12 @@ class DashboardController extends Controller
                 'summary' => [
                     'income_total' => $incomeTotal,
                     'expense_total' => $expenseTotal,
+                    'income_today' => (float) (clone $todayTransactions)->where('transaction_type', 'income')->sum('amount'),
+                    'expense_today' => (float) (clone $todayTransactions)->where('transaction_type', 'expense')->sum('amount'),
                     'net_flow' => $incomeTotal - $expenseTotal,
                     'total_balance' => array_sum($balances),
                     'pending_requests' => $pendingRequests,
+                    'pending_requests_amount' => $pendingRequestsAmount,
                     'wallet_count' => $wallets->count(),
                     'budget_total' => $budgetTotal,
                     'spent_total' => $expenseTotal,
@@ -129,6 +155,7 @@ class DashboardController extends Controller
                     'balance' => $balances[$wallet->id],
                 ]),
                 'recent_transactions' => $recentTransactions,
+                'pending_requests_preview' => $pendingRequestsPreview,
                 'daily_spending' => $dailyExpense,
             ],
         ]);

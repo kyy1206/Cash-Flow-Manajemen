@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model
 {
+    use BelongsToBusiness;
+
     protected $fillable = [
         'user_id',
         'name',

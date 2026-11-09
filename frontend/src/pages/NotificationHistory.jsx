@@ -115,7 +115,7 @@ const NotificationHistory = () => {
   };
 
   return (
-    <InsightsLayout active="notifications" title="Riwayat Notifikasi" eyebrow="PEMBARUAN KEUANGAN">
+    <InsightsLayout active="notifications" title="Riwayat Notifikasi" eyebrow="PEMBARUAN KEUANGAN" unreadCount={unreadCount}>
       <div className="notification-page">
         <section className="notification-summary">
           <div><span className="dashboard-eyebrow">SEMUA PEMBARUAN</span><strong>{pagination.total}</strong><small>notifikasi tersimpan</small></div>

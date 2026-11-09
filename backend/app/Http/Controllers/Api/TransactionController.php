@@ -78,7 +78,7 @@ class TransactionController extends Controller
 
         $destinationWallet = null;
         if (isset($validated['budget_id'])) {
-            $ownerId = (int) DB::table('business_settings')->where('id', 1)->value('owner_user_id');
+            $ownerId = (int) ($request->user()->business?->owner_user_id ?? $request->user()->id);
             $budget = Budget::query()
                 ->whereKey($validated['budget_id'])
                 ->whereHas('monthlyPlan', fn (Builder $query) => $query->where('user_id', $ownerId))
@@ -133,7 +133,11 @@ class TransactionController extends Controller
             }
 
             if ($request->user()->isRole('staff') && $validated['transaction_type'] === 'expense'
-                && $this->requiresApproval($category, (float) $validated['amount'])) {
+                && $this->requiresApproval(
+                    $category,
+                    (float) $validated['amount'],
+                    $request->user()->business?->approval_threshold,
+                )) {
                 throw ValidationException::withMessages([
                     'amount' => ['Pengeluaran ini harus diajukan kepada Supervisor sebelum dibayarkan.'],
                 ]);
@@ -162,7 +166,7 @@ class TransactionController extends Controller
         ]));
 
         $this->audit($request, 'transaction.posted', $transaction, 'Transaksi '.$transaction->transaction_type.' diposting');
-        $ownerId = (int) DB::table('business_settings')->where('id', 1)->value('owner_user_id');
+        $ownerId = (int) ($request->user()->business?->owner_user_id ?? $request->user()->id);
         app(NotificationService::class)->syncBudgetAlertsForPeriod(
             User::query()->findOrFail($ownerId),
             (int) substr($validated['date'], 0, 4),
@@ -245,10 +249,8 @@ class TransactionController extends Controller
         return response()->json(['data' => $reversal], 201);
     }
 
-    private function requiresApproval(Category $category, float $amount): bool
+    private function requiresApproval(Category $category, float $amount, ?float $threshold): bool
     {
-        $threshold = DB::table('business_settings')->where('id', 1)->value('approval_threshold');
-
         return $category->requires_approval || ($threshold !== null && $amount >= (float) $threshold);
     }
 

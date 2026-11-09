@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ApprovalLog extends Model
 {
+    use BelongsToBusiness;
+
     protected $fillable = [
         'expense_request_id',
         'approver_id',

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Subscription extends Model
 {
+    use BelongsToBusiness;
+
     protected $fillable = [
         'user_id',
         'name',

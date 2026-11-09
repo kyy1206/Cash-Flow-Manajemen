@@ -1,9 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { useState } from 'react';
+import SupervisorFrame from './SupervisorFrame';
 import '../pages/Dashboard.css';
 
-const InsightsLayout = ({ active, title, eyebrow, children }) => {
+const InsightsLayout = ({ active, title, eyebrow, unreadCount = 0, children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -38,6 +39,18 @@ const InsightsLayout = ({ active, title, eyebrow, children }) => {
       setLoggingOut(false);
     }
   };
+
+  if (user?.role === 'supervisor') {
+    return (
+      <SupervisorFrame active={active} unreadCount={unreadCount} onLogout={handleLogout}>
+        <div className="supervisor-page-heading">
+          <div><span className="supervisor-eyebrow">{eyebrow}</span><h1>{title}</h1></div>
+        </div>
+        {logoutError && <div className="supervisor-alert error" role="alert">{logoutError}</div>}
+        {children}
+      </SupervisorFrame>
+    );
+  }
 
   return (
     <div className="dashboard-app">
