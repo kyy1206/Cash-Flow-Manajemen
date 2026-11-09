@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import api from '../services/api';
 import { notifyFinancialDataChanged } from '../services/financialDataEvents';
 import SupervisorFrame from '../components/SupervisorFrame';
-import StaffFrame from '../components/StaffFrame';
 import BudgetManagement from './BudgetManagement';
 import CategoryManagement from './CategoryManagement';
 import './BusinessWorkspace.css';
-import './StaffDashboard.css';
 
 const today = () => {
   const date = new Date();
@@ -83,92 +81,6 @@ const downloadCsv = (filename, headers, rows) => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
-function Sidebar({ user, section, onLogout }) {
-  const ownerGroups = [
-    { label: 'UTAMA', links: [
-      { to: '/dashboard', text: 'Dashboard', icon: '⌂' },
-      { to: '/transactions', text: 'Monitoring Transaksi', icon: '↕' },
-      { to: '/requests', text: 'Pengawasan Pengajuan', icon: '▣' },
-    ] },
-    { label: 'KAS & BUKU BESAR', links: [
-      { to: '/wallets', text: 'Kas & Rekening', icon: '▤' },
-      { to: '/debts', text: 'Utang & Piutang', icon: '⇄' },
-      { to: '/reconciliations', text: 'Rekonsiliasi & Koreksi', icon: '✓' },
-      { to: '/reports', text: 'Laporan Keuangan', icon: '▥' },
-    ] },
-    { label: 'MANAJEMEN & KONTROL', links: [
-      { to: '/budgets', text: 'Anggaran Operasional', icon: '◫' },
-      { to: '/categories', text: 'Kategori Arus Kas', icon: '＋' },
-      { to: '/users', text: 'Pengguna & Staf', icon: '♙' },
-      { to: '/audit', text: 'Audit Trail', icon: '≡' },
-    ] },
-    { label: 'SISTEM', links: [
-      { to: '/settings', text: 'Pengaturan & Approval', icon: '⚙' },
-      { to: '/profile', text: 'Profil & Keamanan', icon: '⚿' },
-    ] },
-  ];
-  const links = [
-    { to: '/dashboard', text: 'Dashboard', icon: '⌂', roles: ['owner', 'supervisor', 'staff'] },
-    { to: '/transactions', text: 'Transaksi', icon: '↕', roles: ['owner', 'supervisor', 'staff'] },
-    { to: '/requests', text: 'Pengajuan', icon: '▣', roles: ['owner', 'supervisor', 'staff'] },
-    { to: '/wallets', text: 'Kas & Rekening', icon: '▤', roles: ['owner', 'supervisor', 'staff'] },
-    { to: '/debts', text: 'Utang & Piutang', icon: '⇄', roles: ['owner', 'supervisor', 'staff'] },
-    { to: '/reconciliations', text: 'Rekonsiliasi', icon: '✓', roles: ['owner', 'supervisor', 'staff'] },
-    { to: '/reports', text: 'Laporan', icon: '▥', roles: ['owner', 'supervisor', 'staff'] },
-    { to: '/categories', text: 'Kategori', icon: '＋', roles: ['owner'] },
-    { to: '/budgets', text: 'Anggaran', icon: '◫', roles: ['owner', 'supervisor'] },
-    { to: '/users', text: 'Pengguna', icon: '♙', roles: ['owner'] },
-    { to: '/settings', text: 'Pengaturan', icon: '⚙', roles: ['owner'] },
-    { to: '/audit', text: 'Audit Trail', icon: '≡', roles: ['owner'] },
-    { to: '/notifications', text: 'Notifikasi', icon: '♧', roles: ['owner', 'supervisor', 'staff'] },
-    { to: '/profile', text: 'Profil & Keamanan', icon: '⚿', roles: ['owner', 'supervisor', 'staff'] },
-  ].filter((link) => link.roles.includes(user?.role));
-
-  return (
-    <aside className={`dashboard-sidebar ${user?.role === 'owner' ? 'owner-sidebar' : ''}`}>
-      <Link to="/dashboard" className="dashboard-brand">
-        <span className="dashboard-brand-mark">BH</span>
-        <span><strong>Bocor Halus</strong><small>{user?.role === 'owner' ? 'OWNER PORTAL' : 'KEUANGAN UMKM'}</small>
-          {user?.role === 'owner' && <small className="owner-brand-business">{user?.name}</small>}
-        </span>
-      </Link>
-      <nav className="dashboard-nav">
-        {user?.role === 'owner' ? ownerGroups.map((group) => (
-          <div className="owner-nav-group" key={group.label}>
-            <span className="owner-nav-label">{group.label}</span>
-            {group.links.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={`dashboard-nav-link ${section === link.to.slice(1) ? 'active' : ''}`}
-                aria-current={section === link.to.slice(1) ? 'page' : undefined}
-              >
-                <span>{link.icon}</span>{link.text}
-              </Link>
-            ))}
-          </div>
-        )) : links.map((link) => (
-          <Link
-            key={link.to}
-            to={link.to}
-            className={`dashboard-nav-link ${section === link.to.slice(1) ? 'active' : ''}`}
-            aria-current={section === link.to.slice(1) ? 'page' : undefined}
-          >
-            <span>{link.icon}</span>{link.text}
-          </Link>
-        ))}
-      </nav>
-      <div className="dashboard-sidebar-spacer" />
-      {user?.role === 'owner' && <div className="owner-security-status"><strong>◉ Status Sesi</strong><span>Akun Owner aktif</span></div>}
-      <div className="dashboard-user">
-        <span className="dashboard-avatar">{user?.name?.[0] ?? 'U'}</span>
-        <span><strong>{user?.name}</strong><small>{roles[user?.role] ?? user?.email}</small></span>
-      </div>
-      <button className="business-logout" type="button" onClick={onLogout}>Keluar akun</button>
-    </aside>
-  );
-}
-
 function Field({ label, children }) {
   return <label className="business-field"><span>{label}</span>{children}</label>;
 }
@@ -215,7 +127,6 @@ function BusinessWorkspace() {
   const shownPageInfo = pageInfo?.section === section ? pageInfo : null;
   const isOwner = user?.role === 'owner';
   const isSupervisor = user?.role === 'supervisor';
-  const isStaff = user?.role === 'staff';
   const activeWallets = useMemo(() => wallets.filter((wallet) => wallet.is_active), [wallets]);
   const visibleCategories = useMemo(
     () => categories.filter((category) => category.type === form.transaction_type),
@@ -649,15 +560,9 @@ function BusinessWorkspace() {
 
   const workspaceContent = (
     <>
-      {isOwner && <div className="owner-utilitybar">
-          <Link to="/dashboard" className="owner-utility-brand"><span>BH</span><strong>Bocor Halus</strong></Link>
-          <span className="owner-utility-divider" />
-          <span className="owner-utility-business">{user?.name} <b>• Data Usaha</b></span>
-          <span className="owner-sync-badge"><i /> Sesi Aktif</span>
-        </div>}
-        <header className={isSupervisor ? 'supervisor-page-heading' : isStaff ? 'staff-page-heading' : 'dashboard-topbar'}>
-          <div className={isSupervisor || isStaff ? undefined : 'dashboard-welcome'}>
-            <span className={isSupervisor ? 'supervisor-eyebrow' : isStaff ? 'staff-eyebrow' : 'dashboard-eyebrow'}>{isOwner ? '◈ KONTROL INTERNAL & AKUNTABILITAS' : `${roles[user?.role]?.toUpperCase()} · BOCOR HALUS`}</span>
+      {!['budgets', 'categories'].includes(section) && <header className="supervisor-page-heading">
+          <div>
+            <span className="supervisor-eyebrow">{isOwner ? '◈ KONTROL INTERNAL & AKUNTABILITAS' : `${roles[user?.role]?.toUpperCase()} · BOCOR HALUS`}</span>
             <h1>{title}</h1>
             <p>{isOwner && section === 'requests'
               ? 'Pantau efektivitas otorisasi pengeluaran, kepatuhan batas limit wewenang, dan riwayat audit.'
@@ -669,10 +574,8 @@ function BusinessWorkspace() {
                     ? 'Kelola brankas kas fisik toko, rekening bank operasional, dan mutasi saldo antar-dompet satu UMKM.'
                     : 'Kelola dan pantau keuangan usaha dalam satu tempat.'}</p>
           </div>
-          {section !== 'requests' && <div className={isSupervisor ? 'supervisor-page-actions' : isStaff ? 'staff-page-actions' : undefined}>
-            <Link className={isSupervisor ? 'supervisor-button primary' : isStaff ? 'staff-button primary' : 'dashboard-primary-button'} to="/transactions">{isOwner ? '+ Catat Kas Langsung' : '+ Catat transaksi'}</Link>
-          </div>}
         </header>
+      }
 
         {error && <div className="dashboard-message error" role="alert">{error}</div>}
         {notice && <div className="dashboard-message info" role="status">{notice}</div>}
@@ -1048,20 +951,7 @@ function BusinessWorkspace() {
     </>
   );
 
-  if (isSupervisor) {
-    return <SupervisorFrame active={section} onLogout={logoutUser}>{workspaceContent}</SupervisorFrame>;
-  }
-
-  if (isStaff) {
-    return <StaffFrame active={section} onLogout={logoutUser}>{workspaceContent}</StaffFrame>;
-  }
-
-  return (
-    <div className={`dashboard-app business-app ${isOwner ? `owner-workspace owner-${section}` : ''}`}>
-      <Sidebar user={user} section={section} onLogout={logoutUser} />
-      <main className="dashboard-main business-main">{workspaceContent}</main>
-    </div>
-  );
+  return <SupervisorFrame active={section} onLogout={logoutUser}>{workspaceContent}</SupervisorFrame>;
 }
 
 function DataTable({ headers, rows }) {

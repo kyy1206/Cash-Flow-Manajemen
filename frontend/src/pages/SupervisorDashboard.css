@@ -77,7 +77,7 @@
   background: #21a674;
 }
 
-.supervisor-navigation { display: grid; gap: 14px; }
+.supervisor-navigation { display: grid; min-height: 0; flex: 1; gap: 14px; overflow-y: auto; }
 .supervisor-nav-group { display: grid; gap: 3px; }
 .supervisor-nav-heading { padding: 0 8px 5px; color: #98a2b3; font-size: 8px; font-weight: 800; }
 
@@ -260,7 +260,7 @@
   .supervisor-sidebar { position: static; width: 100%; height: auto; padding: 10px 12px 8px; border-right: 0; border-bottom: 1px solid var(--supervisor-line); }
   .supervisor-brand { margin-bottom: 8px; }
   .supervisor-business-chip, .supervisor-sidebar-spacer, .supervisor-authority-note, .supervisor-account { display: none; }
-  .supervisor-navigation { display: flex; gap: 0; overflow-x: auto; padding-bottom: 2px; }
+  .supervisor-navigation { display: flex; flex: initial; gap: 0; overflow-x: auto; overflow-y: hidden; padding-bottom: 2px; }
   .supervisor-nav-group { display: contents; }
   .supervisor-nav-heading { display: none; }
   .supervisor-nav-link { flex: 0 0 auto; min-height: 32px; padding: 5px 8px; font-size: 9px; }
@@ -297,4 +297,132 @@
   .supervisor-secondary-column .supervisor-side-panel:last-child { grid-column: auto; }
   .supervisor-footer-callout { align-items: flex-start; flex-direction: column; }
   .supervisor-footer-callout .supervisor-button { width: 100%; }
+}
+
+.supervisor-app .business-panel,
+.supervisor-app .report-summary-card,
+.supervisor-app .report-panel,
+.supervisor-app .notification-summary,
+.supervisor-app .notification-list-panel,
+.supervisor-app .finance-plan-card,
+.supervisor-app .finance-allocation-card,
+.supervisor-app .finance-allocation-section,
+.supervisor-app .subscription-metric-card,
+.supervisor-app .subscription-upcoming-card,
+.supervisor-app .subscription-breakdown-card,
+.supervisor-app .subscription-savings-card,
+.supervisor-app .subscription-table-section,
+.supervisor-app .owner-metrics article {
+  border-color: #e8ecf3;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgb(27 49 83 / 3%);
+}
+
+.supervisor-app .business-button,
+.supervisor-app .finance-button.primary,
+.supervisor-app .subscription-button.primary,
+.supervisor-app .notification-mark-all,
+.supervisor-app .notification-read-button {
+  border-radius: 5px;
+  background-color: var(--supervisor-blue);
+  color: #fff;
+}
+
+.supervisor-app .business-button:hover:not(:disabled),
+.supervisor-app .finance-button.primary:hover:not(:disabled),
+.supervisor-app .subscription-button.primary:hover:not(:disabled),
+.supervisor-app .notification-mark-all:hover:not(:disabled),
+.supervisor-app .notification-read-button:hover:not(:disabled) {
+  background-color: var(--supervisor-blue-dark);
+}
+
+.supervisor-app .business-button.secondary,
+.supervisor-app .finance-button.secondary,
+.supervisor-app .subscription-button.secondary {
+  border: 1px solid #dfe5ef;
+  background: #fff;
+  color: #41516d;
+}
+
+.supervisor-app .business-button.secondary:hover:not(:disabled),
+.supervisor-app .finance-button.secondary:hover:not(:disabled),
+.supervisor-app .subscription-button.secondary:hover:not(:disabled) {
+  background: #f6f8fc;
+}
+
+.supervisor-app .business-field input,
+.supervisor-app .business-field select,
+.supervisor-app .report-controls input,
+.supervisor-app .report-controls select,
+.supervisor-app .finance-field input,
+.supervisor-app .finance-field select,
+.supervisor-app .subscription-field input,
+.supervisor-app .subscription-field select,
+.supervisor-app .subscription-simulation-controls select {
+  min-height: 34px;
+  border-color: #dfe5ef;
+  border-radius: 5px;
+}
+
+.supervisor-app .business-section-heading h2,
+.supervisor-app .report-panel-heading h2,
+.supervisor-app .notification-list-heading h2,
+.supervisor-app .finance-section-header h2,
+.supervisor-app .subscription-breakdown-card h2,
+.supervisor-app .subscription-savings-card h2,
+.supervisor-app .subscription-table-header h2 {
+  color: #223451;
+  font-size: 13px;
+}
+
+.supervisor-app .business-section-heading a,
+.supervisor-app .report-month-column.selected .report-month-label,
+.supervisor-app .report-month-column:hover .report-month-label,
+.supervisor-app .finance-button.secondary,
+.supervisor-app .subscription-button.secondary {
+  color: #3c61a5;
+}
+
+.supervisor-app .report-legend-spent,
+.supervisor-app .report-month-spent,
+.supervisor-app .report-category-track i,
+.supervisor-app .report-daily-column i {
+  background: var(--supervisor-blue);
+}
+
+.supervisor-app .report-month-budget {
+  background: #c8d6f1;
+}
+
+.supervisor-app .dashboard-kpi-grid { gap: 10px; margin-bottom: 12px; }
+.supervisor-app .dashboard-kpi {
+  border-color: #e8ecf3;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgb(27 49 83 / 3%);
+}
+.supervisor-app .business-dashboard-grid { gap: 10px; }
+.supervisor-app .subscription-content { display: grid; gap: 14px; }
+.supervisor-app .subscription-page-heading { padding: 0; }
+.supervisor-app .subscription-page-heading p { margin: 0; }
+.supervisor-app .subscription-page-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.supervisor-app .subscription-eyebrow { color: #71819a; }
+.supervisor-app .owner-module-main .finance-plan-card,
+.supervisor-app .owner-module-main .finance-allocation-card,
+.supervisor-app .owner-module-main .finance-summary-card,
+.supervisor-app .owner-module-main .finance-category-form,
+.supervisor-app .owner-module-main .finance-category-preview {
+  border-color: #e8ecf3;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgb(27 49 83 / 3%);
+}
+.supervisor-app .owner-module-main .finance-page-heading h1 {
+  color: #182b4b;
+  font-size: 20px;
+  letter-spacing: 0;
+}
+.supervisor-app .owner-module-main .finance-button.primary {
+  background: var(--supervisor-blue);
+}
+.supervisor-app .owner-module-main .finance-button.primary:hover:not(:disabled) {
+  background: var(--supervisor-blue-dark);
 }

@@ -1,24 +1,13 @@
-import { useEffect, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
-import api from '../services/api';
 
 function Register() {
-  const { setupOwner, isAuthenticated } = useAuth();
+  const { setupOwner } = useAuth();
   const navigate = useNavigate();
-  const [setupRequired, setSetupRequired] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', business_name: '', password: '', password_confirmation: '' });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    api.get('/setup/status')
-      .then(({ data }) => setSetupRequired(data.owner_setup_required))
-      .catch(() => setError('Status setup tidak dapat diperiksa. Coba muat ulang halaman.'));
-  }, []);
-
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
-  if (setupRequired === false) return <Navigate to="/login" replace />;
 
   const submit = async (event) => {
     event.preventDefault();
@@ -51,13 +40,12 @@ function Register() {
         <h1>Buat akun Owner dan usaha</h1>
         <p>Setiap usaha memiliki ruang kerja terpisah. Setelah terdaftar, Owner dapat menambahkan akun Supervisor dan Staff.</p>
         {error && <div className="setup-error" role="alert">{error}</div>}
-        {setupRequired === null && <div className="setup-loading">Memeriksa status setup...</div>}
         <label>Nama Owner<input name="name" value={form.name} onChange={change} autoComplete="name" required /></label>
         <label>Email<input name="email" type="email" value={form.email} onChange={change} autoComplete="email" required /></label>
         <label>Nama usaha<input name="business_name" value={form.business_name} onChange={change} required /></label>
         <label>Password<input name="password" type="password" minLength="8" value={form.password} onChange={change} autoComplete="new-password" required /></label>
         <label>Konfirmasi password<input name="password_confirmation" type="password" minLength="8" value={form.password_confirmation} onChange={change} autoComplete="new-password" required /></label>
-        <button type="submit" disabled={saving || setupRequired !== true}>{saving ? 'Membuat usaha...' : 'Buat akun dan usaha'}</button>
+        <button type="submit" disabled={saving}>{saving ? 'Membuat usaha...' : 'Buat akun dan usaha'}</button>
         <Link to="/login">Sudah memiliki akun? Masuk</Link>
       </form>
       <style>{`

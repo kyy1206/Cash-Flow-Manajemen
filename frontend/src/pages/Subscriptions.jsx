@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/useAuth';
 import api from '../services/api';
+import InsightsLayout from '../components/InsightsLayout';
 import './Subscriptions.css';
 
 const initialForm = {
@@ -48,49 +47,6 @@ const cycleLabels = {
   monthly: 'Bulanan',
   yearly: 'Tahunan',
 };
-
-const Sidebar = ({ user, onLogout, loadingLogout }) => (
-  <aside className="subscription-sidebar">
-    <Link to="/dashboard" className="subscription-brand">
-      <span className="subscription-brand-mark">BH</span>
-      <span><strong>Bocor Halus</strong><small>PERSONAL FINANCE</small></span>
-    </Link>
-
-    <Link to="/dashboard" className="subscription-nav-link">
-      <span>⌂</span> Dashboard
-    </Link>
-    <Link to="/expenses" className="subscription-nav-link">
-      <span>↕</span> Pengeluaran
-    </Link>
-    <Link to="/budgets" className="subscription-nav-link">
-      <span>▤</span> Budget
-    </Link>
-    <Link to="/categories" className="subscription-nav-link">
-      <span>＋</span> Kategori
-    </Link>
-    <Link to="/subscriptions" className="subscription-nav-link active" aria-current="page">
-      <span>↻</span> Subscription
-    </Link>
-    <Link to="/reports" className="subscription-nav-link">
-      <span>▥</span> Laporan
-    </Link>
-    <Link to="/notifications" className="subscription-nav-link">
-      <span>♧</span> Notifikasi
-    </Link>
-    <div className="subscription-sidebar-spacer" />
-
-    <div className="subscription-user">
-      <div className="subscription-avatar">{user?.name?.[0] ?? 'U'}</div>
-      <div className="subscription-user-details">
-        <strong>{user?.name ?? 'User'}</strong>
-        <small>{user?.email ?? ''}</small>
-      </div>
-    </div>
-    <button className="subscription-logout" type="button" onClick={onLogout} disabled={loadingLogout}>
-      {loadingLogout ? 'Keluar...' : 'Keluar Akun'}
-    </button>
-  </aside>
-);
 
 const MetricCard = ({ eyebrow, title, value, footnote, icon, tone = 'green' }) => (
   <article className="subscription-metric-card">
@@ -195,8 +151,6 @@ const SubscriptionForm = ({ subscription, saving, error, onClose, onSubmit }) =>
 };
 
 const Subscriptions = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const [subscriptions, setSubscriptions] = useState([]);
   const [summary, setSummary] = useState(null);
   const [search, setSearch] = useState('');
@@ -206,7 +160,6 @@ const Subscriptions = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [loadingLogout, setLoadingLogout] = useState(false);
   const [error, setError] = useState('');
   const [formError, setFormError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -256,7 +209,7 @@ const Subscriptions = () => {
   const monthlySavings = selectedSimulation ? monthlyEquivalent(selectedSimulation) : 0;
   const selectedCategoryBreakdown = summary?.category_breakdown ?? [];
   const totalCategorySpending = selectedCategoryBreakdown.reduce((total, item) => total + item.monthly_total, 0);
-  const categoryColors = ['#5146e5', '#0f766e', '#f59e0b', '#e11d48', '#64748b'];
+  const categoryColors = ['#174bb8', '#0f766e', '#f59e0b', '#e11d48', '#64748b'];
   const donutBackground = totalCategorySpending > 0
     ? `conic-gradient(${selectedCategoryBreakdown.map((item, index) => {
       const start = selectedCategoryBreakdown.slice(0, index).reduce((total, entry) => total + entry.monthly_total, 0) / totalCategorySpending * 100;
@@ -315,16 +268,6 @@ const Subscriptions = () => {
     }
   };
 
-  const handleLogout = async () => {
-    setLoadingLogout(true);
-    try {
-      await logout();
-      navigate('/login');
-    } finally {
-      setLoadingLogout(false);
-    }
-  };
-
   const openCreateForm = () => {
     setEditingSubscription(null);
     setFormError('');
@@ -332,28 +275,16 @@ const Subscriptions = () => {
   };
 
   return (
-    <div className="subscription-app">
-      <Sidebar user={user} onLogout={handleLogout} loadingLogout={loadingLogout} />
-
-      <main className="subscription-main">
-        <header className="subscription-topbar">
-          <div className="subscription-breadcrumb"><Link to="/dashboard">Dashboard</Link><span>/</span><strong>Subscription & Tagihan</strong></div>
-          <div className="subscription-topbar-actions">
-            <span>{new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</span>
-            <button type="button" className="subscription-button primary" onClick={openCreateForm}>+ Tambah Subscription</button>
-            <div className="subscription-avatar">{user?.name?.[0] ?? 'U'}</div>
-          </div>
-        </header>
-
+    <InsightsLayout active="subscriptions" title="Kelola Subscription & Tagihan Rutin" eyebrow="AUTOPILOT TAGIHAN">
+      <div className="subscription-content">
         <section className="subscription-page-heading">
           <div>
-            <span className="subscription-eyebrow">AUTOPILOT TAGIHAN</span>
-            <h1>Kelola Subscription &amp; Tagihan Rutin</h1>
             <p>Pantau semua layanan berlangganan, siklus pembayaran, dan potensi penghematan setiap bulan.</p>
           </div>
-          <button type="button" className="subscription-button secondary" onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}>
-            ⚙ Filter Layanan
-          </button>
+          <div className="subscription-page-actions">
+            <button type="button" className="subscription-button secondary" onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}>Filter Layanan</button>
+            <button type="button" className="subscription-button primary" onClick={openCreateForm}>+ Tambah Subscription</button>
+          </div>
         </section>
 
         {error && <div className="subscription-alert error" role="alert">{error}</div>}
@@ -532,19 +463,18 @@ const Subscriptions = () => {
             </section>
           </>
         )}
-      </main>
-
-      {(isCreating || editingSubscription) && (
-        <SubscriptionForm
-          key={editingSubscription?.id ?? 'new-subscription'}
-          subscription={editingSubscription}
-          saving={saving}
-          error={formError}
-          onClose={closeForm}
-          onSubmit={submitSubscription}
-        />
-      )}
-    </div>
+        {(isCreating || editingSubscription) && (
+          <SubscriptionForm
+            key={editingSubscription?.id ?? 'new-subscription'}
+            subscription={editingSubscription}
+            saving={saving}
+            error={formError}
+            onClose={closeForm}
+            onSubmit={submitSubscription}
+          />
+        )}
+      </div>
+    </InsightsLayout>
   );
 };
 

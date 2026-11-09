@@ -15,42 +15,6 @@ const currency = (amount = 0) => new Intl.NumberFormat('id-ID', {
   maximumFractionDigits: 0,
 }).format(Number(amount));
 
-const ownerGroups = [
-  { label: 'UTAMA', links: [
-    ['/dashboard', '⌂', 'Dashboard'],
-    ['/transactions', '↕', 'Monitoring Transaksi'],
-    ['/requests', '▣', 'Pengawasan Pengajuan'],
-  ] },
-  { label: 'KAS & BUKU BESAR', links: [
-    ['/wallets', '▤', 'Kas & Rekening'],
-    ['/debts', '⇄', 'Utang & Piutang'],
-    ['/reconciliations', '✓', 'Rekonsiliasi & Koreksi'],
-    ['/reports', '▥', 'Laporan Keuangan'],
-  ] },
-  { label: 'MANAJEMEN & KONTROL', links: [
-    ['/budgets', '◫', 'Anggaran Operasional'],
-    ['/categories', '＋', 'Kategori Arus Kas'],
-    ['/users', '♙', 'Pengguna & Staf'],
-    ['/audit', '≡', 'Audit Trail'],
-  ] },
-  { label: 'SISTEM', links: [
-    ['/settings', '⚙', 'Pengaturan & Approval'],
-    ['/profile', '⚿', 'Profil & Keamanan'],
-  ] },
-];
-const navigation = [
-  ['/dashboard', '⌂', 'Dashboard'],
-  ['/transactions', '↕', 'Transaksi'],
-  ['/requests', '▣', 'Pengajuan'],
-  ['/wallets', '▤', 'Kas & Rekening'],
-  ['/debts', '⇄', 'Utang & Piutang'],
-  ['/reconciliations', '✓', 'Rekonsiliasi'],
-  ['/reports', '▥', 'Laporan'],
-  ['/budgets', '◫', 'Anggaran'],
-  ['/notifications', '♧', 'Notifikasi'],
-  ['/profile', '⚿', 'Profil & Keamanan'],
-];
-
 const downloadSummary = (dashboard, period) => {
   const rows = [
     ['Ringkasan supervisor', period],
@@ -743,58 +707,20 @@ function BusinessDashboard() {
   }
 
   return (
-    <div className={`dashboard-app business-app ${user?.role === 'owner' ? 'owner-workspace owner-dashboard' : ''}`}>
-      <aside className={`dashboard-sidebar ${user?.role === 'owner' ? 'owner-sidebar' : ''}`}>
-        <Link to="/dashboard" className="dashboard-brand">
-          <span className="dashboard-brand-mark">BH</span>
-          <span><strong>Bocor Halus</strong><small>{user?.role === 'owner' ? 'OWNER PORTAL' : 'KEUANGAN UMKM'}</small>
-            {user?.role === 'owner' && <small className="owner-brand-business">{user?.name}</small>}
-          </span>
-        </Link>
-        <nav className="dashboard-nav">
-          {user?.role === 'owner' ? ownerGroups.map((group) => (
-            <div className="owner-nav-group" key={group.label}>
-              <span className="owner-nav-label">{group.label}</span>
-              {group.links.map(([path, icon, label]) => (
-                <Link key={path} to={path} className={`dashboard-nav-link ${path === '/dashboard' ? 'active' : ''}`} aria-current={path === '/dashboard' ? 'page' : undefined}>
-                  <span>{icon}</span>{label}
-                </Link>
-              ))}
-            </div>
-          )) : navigation.map(([path, icon, label]) => (
-            <Link key={path} to={path} className={`dashboard-nav-link ${path === '/dashboard' ? 'active' : ''}`} aria-current={path === '/dashboard' ? 'page' : undefined}>
-              <span>{icon}</span>{label}
-            </Link>
-          ))}
-        </nav>
-        <div className="dashboard-sidebar-spacer" />
-        {user?.role === 'owner' && <div className="owner-security-status"><strong>◉ Status Sesi</strong><span>Akun Owner aktif</span></div>}
-        <div className="dashboard-user">
-          <span className="dashboard-avatar">{user?.name?.[0] ?? 'U'}</span>
-          <span><strong>{user?.name}</strong><small>{statusLabel}</small></span>
-        </div>
-        <button className="business-logout" type="button" onClick={logoutUser}>Keluar akun</button>
-      </aside>
-      <main className="dashboard-main business-main">
-        {user?.role === 'owner' && <div className="owner-utilitybar">
-          <Link to="/dashboard" className="owner-utility-brand"><span>BH</span><strong>Bocor Halus</strong></Link>
-          <span className="owner-utility-divider" />
-          <span className="owner-utility-business">{user?.name} <b>• Data Usaha</b></span>
-          <span className="owner-sync-badge"><i /> Sesi Aktif</span>
-        </div>}
-        <header className="dashboard-topbar">
-          <div className="dashboard-welcome">
-            <span className="dashboard-eyebrow">{user?.role === 'owner' ? '◈ MONITORING KEUANGAN USAHA' : `${statusLabel} · MONITORING KEUANGAN`}</span>
+    <SupervisorFrame active="dashboard" unreadCount={unreadCount} onLogout={logoutUser}>
+      <div className="supervisor-dashboard-content">
+        <header className="supervisor-page-heading">
+          <div>
+            <span className="supervisor-eyebrow">{user?.role === 'owner' ? 'MONITORING KEUANGAN USAHA' : `${statusLabel} · MONITORING KEUANGAN`}</span>
             <h1>Ringkasan keuangan usaha</h1>
             <p>Saldo kas/rekening serta arus pemasukan dan pengeluaran.</p>
           </div>
-          <div className="dashboard-topbar-actions">
-            <input className="dashboard-period-input" type="month" value={period} onChange={(event) => setPeriod(event.target.value)} aria-label="Pilih periode" />
-            <Link to="/transactions" className="dashboard-primary-button">{user?.role === 'owner' ? '+ Catat Kas Langsung' : '+ Catat transaksi'}</Link>
+          <div className="supervisor-page-actions">
+            <input type="month" value={period} onChange={(event) => setPeriod(event.target.value)} aria-label="Pilih periode" />
           </div>
         </header>
-        {error && <div className="dashboard-message error" role="alert">{error}</div>}
-        {loading && <div className="dashboard-message loading">Memuat ringkasan...</div>}
+        {error && <div className="supervisor-alert error" role="alert">{error}</div>}
+        {loading && <div className="supervisor-alert" role="status">Memuat ringkasan...</div>}
         {summary && (
           <>
             <section className="dashboard-kpi-grid" aria-label="Ringkasan periode">
@@ -839,8 +765,8 @@ function BusinessDashboard() {
             </section>
           </>
         )}
-      </main>
-    </div>
+      </div>
+    </SupervisorFrame>
   );
 }
 

@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../services/api';
 import './LandingPage.css';
 
 const sampleTransactions = [
@@ -10,16 +8,6 @@ const sampleTransactions = [
 ];
 
 const LandingPage = () => {
-  const [ownerSetupRequired, setOwnerSetupRequired] = useState(false);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    api.get('/setup/status', { signal: controller.signal })
-      .then(({ data }) => setOwnerSetupRequired(data.owner_setup_required))
-      .catch(() => setOwnerSetupRequired(false));
-    return () => controller.abort();
-  }, []);
-
   return (
     <div className="landing-page">
       <header className="landing-header">
@@ -34,7 +22,7 @@ const LandingPage = () => {
         </nav>
         <div className="landing-header-actions">
           <Link to="/login" className="landing-login-link">Masuk</Link>
-          {ownerSetupRequired && <Link to="/setup" className="landing-header-cta">Siapkan usaha <span>→</span></Link>}
+          <Link to="/register" className="landing-header-cta">Daftarkan Owner <span>→</span></Link>
         </div>
       </header>
 
@@ -45,7 +33,7 @@ const LandingPage = () => {
             <h1 id="landing-title">Bocor Halus</h1>
             <p>Arus kas lebih tertib. Pengeluaran lebih terkontrol. Keputusan usaha tercatat dalam satu alur.</p>
             <div className="landing-hero-actions">
-              <Link to={ownerSetupRequired ? '/setup' : '/login'} className="landing-button primary">{ownerSetupRequired ? 'Mulai siapkan usaha' : 'Masuk ke portal'} <span>→</span></Link>
+              <Link to="/register" className="landing-button primary">Daftarkan Owner <span>→</span></Link>
               <a href="#fitur" className="landing-button quiet">Lihat cara kerja <span>↓</span></a>
             </div>
             <div className="landing-trust-line"><span>01</span> Pencatatan · <span>02</span> Persetujuan · <span>03</span> Pengawasan</div>
@@ -107,7 +95,7 @@ const LandingPage = () => {
 
         <section className="landing-access" id="akses">
           <div><span className="landing-eyebrow"><i /> AKSES TERKONTROL</span><h2>Keputusan keuangan tetap bisa ditelusuri.</h2><p>Hak akses mengikuti peran, sementara tindakan penting dicatat sebagai audit trail.</p></div>
-          <Link to={ownerSetupRequired ? '/setup' : '/login'} className="landing-button primary">{ownerSetupRequired ? 'Siapkan Owner' : 'Masuk ke portal'} <span>→</span></Link>
+          <Link to="/register" className="landing-button primary">Daftarkan Owner <span>→</span></Link>
         </section>
       </main>
 
