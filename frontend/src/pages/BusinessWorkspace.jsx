@@ -4,9 +4,11 @@ import { useAuth } from '../context/useAuth';
 import api from '../services/api';
 import { notifyFinancialDataChanged } from '../services/financialDataEvents';
 import SupervisorFrame from '../components/SupervisorFrame';
+import StaffFrame from '../components/StaffFrame';
 import BudgetManagement from './BudgetManagement';
 import CategoryManagement from './CategoryManagement';
 import './BusinessWorkspace.css';
+import './StaffDashboard.css';
 
 const today = () => {
   const date = new Date();
@@ -179,7 +181,12 @@ function BusinessWorkspace() {
   const [data, setData] = useState([]);
   const [wallets, setWallets] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [form, setForm] = useState({ transaction_type: 'income', date: today(), type: 'receivable' });
+  const [form, setForm] = useState({
+    transaction_type: 'income',
+    date: today(),
+    reconciled_at: today(),
+    type: 'receivable',
+  });
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(true);
@@ -208,6 +215,7 @@ function BusinessWorkspace() {
   const shownPageInfo = pageInfo?.section === section ? pageInfo : null;
   const isOwner = user?.role === 'owner';
   const isSupervisor = user?.role === 'supervisor';
+  const isStaff = user?.role === 'staff';
   const activeWallets = useMemo(() => wallets.filter((wallet) => wallet.is_active), [wallets]);
   const visibleCategories = useMemo(
     () => categories.filter((category) => category.type === form.transaction_type),
@@ -375,6 +383,7 @@ function BusinessWorkspace() {
       } else if (section === 'reconciliations') {
         await api.post('/reconciliations', {
           ...form,
+          reconciled_at: form.reconciled_at || today(),
           wallet_id: Number(form.wallet_id),
           counted_balance: Number(form.counted_balance),
         });
@@ -396,7 +405,12 @@ function BusinessWorkspace() {
       }
       setNotice('Perubahan berhasil disimpan.');
       formElement.reset();
-      setForm({ transaction_type: 'income', date: today(), type: 'receivable' });
+      setForm({
+        transaction_type: 'income',
+        date: today(),
+        reconciled_at: today(),
+        type: 'receivable',
+      });
       setEditingUserId(null);
       setEditingWalletId(null);
       if (section === 'wallets') setShowWalletForm(false);
@@ -542,7 +556,7 @@ function BusinessWorkspace() {
         line: index + 2,
         date: csvDate(cells[dateIndex]),
         amount: csvAmount(cells[amountIndex]),
-        description: cells[descriptionIndex] || '—',
+        description: cells[descriptionIndex] || '-',
       })).filter((row) => row.date && row.amount !== null);
       if (!rows.length) throw new Error('Tidak ada baris mutasi dengan tanggal dan nominal yang valid.');
       if (!statementWalletId) throw new Error('Pilih rekening yang akan dicocokkan terlebih dahulu.');
@@ -641,9 +655,9 @@ function BusinessWorkspace() {
           <span className="owner-utility-business">{user?.name} <b>• Data Usaha</b></span>
           <span className="owner-sync-badge"><i /> Sesi Aktif</span>
         </div>}
-        <header className={isSupervisor ? 'supervisor-page-heading' : 'dashboard-topbar'}>
-          <div className={isSupervisor ? undefined : 'dashboard-welcome'}>
-            <span className={isSupervisor ? 'supervisor-eyebrow' : 'dashboard-eyebrow'}>{isOwner ? '◈ KONTROL INTERNAL & AKUNTABILITAS' : `${roles[user?.role]?.toUpperCase()} · BOCOR HALUS`}</span>
+        <header className={isSupervisor ? 'supervisor-page-heading' : isStaff ? 'staff-page-heading' : 'dashboard-topbar'}>
+          <div className={isSupervisor || isStaff ? undefined : 'dashboard-welcome'}>
+            <span className={isSupervisor ? 'supervisor-eyebrow' : isStaff ? 'staff-eyebrow' : 'dashboard-eyebrow'}>{isOwner ? '◈ KONTROL INTERNAL & AKUNTABILITAS' : `${roles[user?.role]?.toUpperCase()} · BOCOR HALUS`}</span>
             <h1>{title}</h1>
             <p>{isOwner && section === 'requests'
               ? 'Pantau efektivitas otorisasi pengeluaran, kepatuhan batas limit wewenang, dan riwayat audit.'
@@ -655,8 +669,8 @@ function BusinessWorkspace() {
                     ? 'Kelola brankas kas fisik toko, rekening bank operasional, dan mutasi saldo antar-dompet satu UMKM.'
                     : 'Kelola dan pantau keuangan usaha dalam satu tempat.'}</p>
           </div>
-          {section !== 'requests' && <div className={isSupervisor ? 'supervisor-page-actions' : undefined}>
-            <Link className={isSupervisor ? 'supervisor-button primary' : 'dashboard-primary-button'} to="/transactions">{isOwner ? '+ Catat Kas Langsung' : '+ Catat transaksi'}</Link>
+          {section !== 'requests' && <div className={isSupervisor ? 'supervisor-page-actions' : isStaff ? 'staff-page-actions' : undefined}>
+            <Link className={isSupervisor ? 'supervisor-button primary' : isStaff ? 'staff-button primary' : 'dashboard-primary-button'} to="/transactions">{isOwner ? '+ Catat Kas Langsung' : '+ Catat transaksi'}</Link>
           </div>}
         </header>
 
@@ -720,8 +734,8 @@ function BusinessWorkspace() {
             <DataTable headers={isOwner
               ? ['Tanggal', 'Jenis', 'Keterangan', 'Kategori', 'Sumber dana', 'Nominal', 'Aksi']
               : ['Tanggal', 'Jenis', 'Keterangan', 'Kategori', 'Sumber dana', 'Nominal']} rows={listData.map((item) => [
-              item.date, item.transaction_type, item.description || item.merchant || '—', item.category?.name ?? '—',
-              item.wallet?.name ?? '—', currency(item.amount),
+              item.date, item.transaction_type, item.description || item.merchant || '-', item.category?.name ?? '-',
+              item.wallet?.name ?? '-', currency(item.amount),
               ...(isOwner ? [item.reversal || item.reversal_of_id
                 ? 'Sudah dikoreksi'
                 : <button className="business-button secondary" onClick={() => reverseTransaction(item)}>Koreksi</button>] : []),
@@ -839,13 +853,13 @@ function BusinessWorkspace() {
                 <Field label="Status"><select value={requestFilter} onChange={(event) => setRequestFilter(event.target.value)}><option value="all">Semua</option><option value="pending">Menunggu</option><option value="approved">Disetujui</option><option value="rejected">Ditolak</option><option value="paid">Dibayar</option></select></Field>
               </div>
             {isOwner ? <DataTable headers={['ID & WAKTU', 'PEMOHON', 'KEPERLUAN & KATEGORI', 'NOMINAL', 'STATUS & SUMBER DANA', 'VERIFIKASI / ALASAN', 'AKSI']} rows={visibleRequests.map((item) => [
-              <><strong>REQ-{String(item.id).padStart(4, '0')}</strong><small>{item.created_at ? new Date(item.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</small></>,
+              <><strong>REQ-{String(item.id).padStart(4, '0')}</strong><small>{item.created_at ? new Date(item.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-'}</small></>,
               <><strong>{item.requester?.name ?? 'Pengguna'}</strong><small>{item.requester?.role ?? 'Staff'}</small></>,
               <><strong>{item.purpose}</strong><small>{item.category?.name ?? 'Tanpa kategori'}</small></>,
               <strong className="owner-amount">{currency(item.amount)}</strong>,
-              <><span className={`business-status status-${item.status}`}>{item.status}</span><small>{item.wallet?.name ?? '—'}</small></>,
+              <><span className={`business-status status-${item.status}`}>{item.status}</span><small>{item.wallet?.name ?? '-'}</small></>,
               <small>{item.decision_note || (item.status === 'pending' ? 'Menunggu keputusan Supervisor' : item.transaction_id ? `Transaksi #${item.transaction_id}` : 'Tidak ada catatan')}</small>,
-              item.has_attachment ? <button className="business-button secondary" type="button" onClick={() => downloadEvidence(item)}>↓ Bukti</button> : '—',
+              item.has_attachment ? <button className="business-button secondary" type="button" onClick={() => downloadEvidence(item)}>↓ Bukti</button> : '-',
             ])} /> : <div className="business-list">{visibleRequests.map((item) => <article className="business-panel business-list-item" key={item.id}>
               <div><strong>{item.purpose}</strong><span>{item.requester?.name} · {item.category?.name ?? 'Tanpa kategori'} · {item.wallet?.name}</span><small>{item.description}</small></div>
               <div className="business-request-value"><strong>{currency(item.amount)}</strong><span className={`business-status status-${item.status}`}>{item.status}</span></div>
@@ -941,7 +955,7 @@ function BusinessWorkspace() {
             })}</div> : <section className="business-panel owner-section">
             <div className="business-section-heading"><div><h2>Buku utang & piutang</h2><small>Pembayaran dicatat ke ledger dan saldo diperbarui.</small></div></div>
             <DataTable headers={['Jenis', 'Pihak', 'Jatuh tempo', 'Sisa', 'Status', '']} rows={debtRows.map((debt) => [
-              debt.type === 'receivable' ? 'Piutang' : 'Utang', debt.counterparty, debt.due_date ?? '—',
+              debt.type === 'receivable' ? 'Piutang' : 'Utang', debt.counterparty, debt.due_date ?? '-',
               currency(debt.remaining_amount), debt.status,
               debt.status === 'open' && activeWallets.length > 0 ? (
                 debtPayment?.id === debt.id ? <form className="owner-payment-form" onSubmit={(event) => submitDebtPayment(event, debt)}>
@@ -950,7 +964,7 @@ function BusinessWorkspace() {
                   <button className="business-button" type="submit">Catat</button>
                   <button className="business-button secondary" type="button" onClick={() => setDebtPayment(null)}>Batal</button>
                 </form> : <button className="business-button secondary" onClick={() => settleDebt(debt)}>Catat pembayaran</button>
-              ) : '—',
+              ) : '-',
             ])} />
             <PageControls pageInfo={shownPageInfo} onPageChange={changePage} />
             </section>}
@@ -974,7 +988,7 @@ function BusinessWorkspace() {
               <p>Pengajuan rekonsiliasi tidak mengubah saldo; hasilnya menunggu review sesuai izin role.</p>
               <div className="business-form-grid">
                 <Field label="Kas/rekening"><select name="wallet_id" value={form.wallet_id ?? ''} onChange={setField} required><option value="">Pilih sumber dana</option>{activeWallets.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
-                <Field label="Tanggal"><input name="reconciled_at" type="date" value={form.reconciled_at ?? today()} onChange={setField} required /></Field>
+                <Field label="Tanggal"><input name="reconciled_at" type="date" value={form.reconciled_at || today()} onChange={setField} required /></Field>
                 <Field label="Saldo hasil hitung"><input name="counted_balance" type="number" min="0" step="0.01" value={form.counted_balance ?? ''} onChange={setField} required /></Field>
                 <Field label="Catatan"><input name="notes" value={form.notes ?? ''} onChange={setField} /></Field>
               </div>
@@ -995,7 +1009,7 @@ function BusinessWorkspace() {
             <DataTable headers={['Tanggal', 'Sumber dana', 'Saldo sistem', 'Hasil hitung', 'Selisih', 'Status', 'Pencatat/reviewer', '']} rows={visibleReconciliations.map((item) => [
               item.reconciled_at, item.wallet?.name, currency(item.system_balance), currency(item.counted_balance),
               currency(item.difference), item.status, `${item.creator?.name ?? 'Pengguna'}${item.reviewer?.name ? ` / ${item.reviewer.name}` : ''}`,
-              isSupervisor && item.status === 'pending' ? <button className="business-button secondary" onClick={() => reviewReconciliation(item.id)}>Review</button> : '—',
+              isSupervisor && item.status === 'pending' ? <button className="business-button secondary" onClick={() => reviewReconciliation(item.id)}>Review</button> : '-',
             ])} />
             <PageControls pageInfo={shownPageInfo} onPageChange={changePage} />
             </section>
@@ -1036,6 +1050,10 @@ function BusinessWorkspace() {
 
   if (isSupervisor) {
     return <SupervisorFrame active={section} onLogout={logoutUser}>{workspaceContent}</SupervisorFrame>;
+  }
+
+  if (isStaff) {
+    return <StaffFrame active={section} onLogout={logoutUser}>{workspaceContent}</StaffFrame>;
   }
 
   return (

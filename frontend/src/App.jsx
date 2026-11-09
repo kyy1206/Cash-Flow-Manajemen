@@ -27,11 +27,22 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {['transactions', 'wallets', 'requests', 'debts', 'reconciliations', 'users', 'settings', 'audit', 'profile'].map((path) => (
+          {['transactions', 'wallets', 'requests', 'debts', 'reconciliations', 'profile'].map((path) => (
             <Route
               key={path}
               path={`/${path}`}
               element={<ProtectedRoute><BusinessWorkspace /></ProtectedRoute>}
+            />
+          ))}
+          {['users', 'settings', 'audit'].map((path) => (
+            <Route
+              key={path}
+              path={`/${path}`}
+              element={
+                <ProtectedRoute roles={['owner']}>
+                  <BusinessWorkspace />
+                </ProtectedRoute>
+              }
             />
           ))}
           <Route

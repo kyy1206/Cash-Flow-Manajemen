@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { useState } from 'react';
 import SupervisorFrame from './SupervisorFrame';
+import StaffFrame from './StaffFrame';
 import '../pages/Dashboard.css';
 
 const InsightsLayout = ({ active, title, eyebrow, unreadCount = 0, children }) => {
@@ -49,6 +50,18 @@ const InsightsLayout = ({ active, title, eyebrow, unreadCount = 0, children }) =
         {logoutError && <div className="supervisor-alert error" role="alert">{logoutError}</div>}
         {children}
       </SupervisorFrame>
+    );
+  }
+
+  if (user?.role === 'staff') {
+    return (
+      <StaffFrame active={active} unreadCount={unreadCount} onLogout={handleLogout}>
+        <div className="staff-page-heading">
+          <div><span className="staff-eyebrow">{eyebrow}</span><h1>{title}</h1></div>
+        </div>
+        {logoutError && <div className="staff-alert error" role="alert">{logoutError}</div>}
+        {children}
+      </StaffFrame>
     );
   }
 
