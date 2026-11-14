@@ -51,6 +51,80 @@ class ReportControllerTest extends TestCase
             ->assertJsonCount(1, 'data.daily_spending');
     }
 
+    public function test_report_returns_monthly_comparison_and_excludes_internal_transfers(): void
+    {
+        $user = User::factory()->create();
+        $incomeCategory = $user->categories()->create(['name' => 'Penjualan', 'type' => 'income']);
+        $expenseCategory = $user->categories()->create(['name' => 'Bahan baku', 'type' => 'expense']);
+        $user->transactions()->create([
+            'category_id' => $incomeCategory->id,
+            'amount' => 250000,
+            'date' => '2026-10-02',
+            'status' => 'completed',
+            'transaction_type' => 'income',
+        ]);
+        $user->transactions()->create([
+            'category_id' => $expenseCategory->id,
+            'amount' => 80000,
+            'date' => '2026-10-03',
+            'status' => 'completed',
+            'transaction_type' => 'expense',
+        ]);
+        $user->transactions()->create([
+            'category_id' => $incomeCategory->id,
+            'amount' => 200000,
+            'date' => '2026-09-15',
+            'status' => 'completed',
+            'transaction_type' => 'income',
+        ]);
+        $user->transactions()->create([
+            'category_id' => $expenseCategory->id,
+            'amount' => 50000,
+            'date' => '2026-09-10',
+            'status' => 'completed',
+            'transaction_type' => 'expense',
+        ]);
+        $user->transactions()->create([
+            'amount' => 500000,
+            'date' => '2026-10-04',
+            'status' => 'completed',
+            'transaction_type' => 'transfer',
+        ]);
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/reports?year=2026&month=10')->assertOk()
+            ->assertJsonPath('data.previous_period.year', 2026)
+            ->assertJsonPath('data.previous_period.month', 9)
+            ->assertJsonPath('data.summary.selected_month_income', 250000)
+            ->assertJsonPath('data.summary.selected_month_total', 80000)
+            ->assertJsonPath('data.summary.selected_month_net_flow', 170000)
+            ->assertJsonPath('data.summary.selected_month_transaction_count', 2)
+            ->assertJsonPath('data.summary.previous_month_income', 200000)
+            ->assertJsonPath('data.summary.previous_month_total', 50000)
+            ->assertJsonPath('data.category_income.0.category', 'Penjualan')
+            ->assertJsonPath('data.previous_category_spending.0.category', 'Bahan baku')
+            ->assertJsonCount(2, 'data.daily_cash_flow')
+            ->assertJsonPath('data.daily_cash_flow.0.net_flow', 250000)
+            ->assertJsonPath('data.daily_cash_flow.1.net_flow', -80000);
+    }
+
+    public function test_january_report_compares_with_december_of_previous_year(): void
+    {
+        $user = User::factory()->create();
+        $user->transactions()->create([
+            'amount' => 50000,
+            'date' => '2025-12-15',
+            'status' => 'completed',
+            'transaction_type' => 'expense',
+        ]);
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/reports?year=2026&month=1')->assertOk()
+            ->assertJsonPath('data.previous_period.year', 2025)
+            ->assertJsonPath('data.previous_period.month', 12)
+            ->assertJsonPath('data.summary.previous_month_total', 50000);
+    }
+
     public function test_report_includes_all_business_users_transactions_for_supervisors(): void
     {
         $owner = User::factory()->create();

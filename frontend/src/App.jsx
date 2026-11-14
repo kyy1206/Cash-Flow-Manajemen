@@ -9,6 +9,9 @@ import Subscriptions from './pages/Subscriptions';
 import Reports from './pages/Reports';
 import NotificationHistory from './pages/NotificationHistory';
 import LandingPage from './pages/LandingPage';
+import AuditTrail from './pages/AuditTrail';
+import BusinessSettings from './pages/BusinessSettings';
+import ProfileSecurity from './pages/ProfileSecurity';
 import './App.css';
 
 function App() {
@@ -27,14 +30,14 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {['transactions', 'wallets', 'requests', 'debts', 'reconciliations', 'profile'].map((path) => (
+          {['transactions', 'wallets', 'requests', 'debts', 'reconciliations'].map((path) => (
             <Route
               key={path}
               path={`/${path}`}
               element={<ProtectedRoute><BusinessWorkspace /></ProtectedRoute>}
             />
           ))}
-          {['users', 'settings', 'audit'].map((path) => (
+          {['users'].map((path) => (
             <Route
               key={path}
               path={`/${path}`}
@@ -45,6 +48,30 @@ function App() {
               }
             />
           ))}
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute roles={['owner']}>
+                <BusinessSettings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfileSecurity />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/audit"
+            element={
+              <ProtectedRoute roles={['owner']}>
+                <AuditTrail />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/budgets"
             element={

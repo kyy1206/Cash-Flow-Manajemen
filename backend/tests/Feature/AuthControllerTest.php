@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Business;
 use App\Models\Category;
 use App\Models\User;
 use App\Models\Wallet;
@@ -24,6 +25,7 @@ class AuthControllerTest extends TestCase
         ])->assertCreated()
             ->assertJsonPath('user.email', 'owner@example.com')
             ->assertJsonPath('user.role', 'owner')
+            ->assertJsonPath('user.business.business_name', 'Toko Contoh')
             ->assertJsonMissingPath('user.password')
             ->assertJsonStructure(['token']);
 
@@ -72,7 +74,8 @@ class AuthControllerTest extends TestCase
         $firstWallet = Wallet::where('created_by', $firstOwner->id)->firstOrFail();
         $firstCategory = Category::where('user_id', $firstOwner->id)->where('type', 'income')->firstOrFail();
 
-        $this->actingAs($firstOwner, 'sanctum')->postJson('/api/transactions', [
+        $staff = User::factory()->create(['role' => 'staff']);
+        $this->actingAs($staff, 'sanctum')->postJson('/api/transactions', [
             'transaction_type' => 'income',
             'category_id' => $firstCategory->id,
             'wallet_id' => $firstWallet->id,
@@ -141,13 +144,19 @@ class AuthControllerTest extends TestCase
 
     public function test_login_returns_a_token_for_valid_credentials(): void
     {
-        $user = User::factory()->create(['password' => 'password123']);
+        $user = User::factory()->create(['role' => 'owner', 'password' => 'password123']);
+        $business = Business::create([
+            'owner_user_id' => $user->id,
+            'business_name' => 'Toko Contoh',
+        ]);
+        $user->update(['business_id' => $business->id]);
 
         $this->postJson('/api/login', [
             'email' => $user->email,
             'password' => 'password123',
         ])->assertOk()
             ->assertJsonPath('user.id', $user->id)
+            ->assertJsonPath('user.business.business_name', 'Toko Contoh')
             ->assertJsonStructure(['token']);
     }
 

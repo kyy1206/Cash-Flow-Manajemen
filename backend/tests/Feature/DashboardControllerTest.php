@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Debt;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -33,6 +34,13 @@ class DashboardControllerTest extends TestCase
             'status' => 'completed',
         ]);
         $user->transactions()->create([
+            'amount' => 500000,
+            'date' => '2026-10-15',
+            'description' => 'Sales',
+            'transaction_type' => 'income',
+            'status' => 'completed',
+        ]);
+        $user->transactions()->create([
             'amount' => 950000,
             'date' => '2026-10-16',
             'description' => 'Other expense',
@@ -58,7 +66,37 @@ class DashboardControllerTest extends TestCase
             ->assertJsonPath('data.summary.daily_limit', 71875)
             ->assertJsonPath('data.budget_categories.0.spent', 900000)
             ->assertJsonPath('data.budget_categories.0.status', 'waspada')
-            ->assertJsonCount(2, 'data.daily_spending');
+            ->assertJsonCount(2, 'data.daily_spending')
+            ->assertJsonPath('data.daily_cash_flow.0.date', '2026-10-15')
+            ->assertJsonPath('data.daily_cash_flow.0.income', 500000)
+            ->assertJsonPath('data.daily_cash_flow.1.expense', 950000);
+    }
+
+    public function test_dashboard_summarizes_open_obligations_due_within_fourteen_days(): void
+    {
+        $this->travelTo('2026-10-16 12:00:00');
+        $owner = User::factory()->create(['role' => 'owner']);
+        Sanctum::actingAs($owner);
+
+        foreach ([
+            ['type' => 'receivable', 'counterparty' => 'Pelanggan A', 'remaining_amount' => 150000, 'due_date' => '2026-10-20', 'status' => 'open'],
+            ['type' => 'payable', 'counterparty' => 'Supplier B', 'remaining_amount' => 500000, 'due_date' => '2026-10-27', 'status' => 'open'],
+            ['type' => 'payable', 'counterparty' => 'Supplier C', 'remaining_amount' => 75000, 'due_date' => '2026-11-01', 'status' => 'open'],
+            ['type' => 'receivable', 'counterparty' => 'Pelanggan D', 'remaining_amount' => 25000, 'due_date' => '2026-10-19', 'status' => 'settled'],
+        ] as $obligation) {
+            Debt::create([
+                'created_by' => $owner->id,
+                'original_amount' => $obligation['remaining_amount'],
+                ...$obligation,
+            ]);
+        }
+
+        $this->getJson('/api/dashboard')->assertOk()
+            ->assertJsonPath('data.upcoming_obligations.count', 2)
+            ->assertJsonPath('data.upcoming_obligations.receivable_total', 150000)
+            ->assertJsonPath('data.upcoming_obligations.payable_total', 500000)
+            ->assertJsonPath('data.upcoming_obligations.net_total', -350000)
+            ->assertJsonPath('data.upcoming_obligations.items.0.counterparty', 'Pelanggan A');
     }
 
     public function test_supervisor_dashboard_includes_pending_request_total_and_preview(): void

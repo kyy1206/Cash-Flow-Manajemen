@@ -14,12 +14,55 @@ class ReconciliationController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Reconciliation::query()->with(['wallet:id,name', 'creator:id,name', 'reviewer:id,name'])->latest('reconciled_at');
-        if ($request->user()->isRole('staff')) {
-            $query->where('created_by', $request->user()->id);
-        }
+        $validated = $request->validate([
+            'status' => ['sometimes', 'in:pending,reviewed'],
+            'wallet_id' => ['sometimes', 'integer'],
+            'date_from' => ['sometimes', 'date_format:Y-m-d'],
+            'date_to' => ['sometimes', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+            'search' => ['sometimes', 'string', 'max:255'],
+        ]);
 
-        return response()->json(['data' => $query->paginate(20)]);
+        $baseQuery = Reconciliation::query()
+            ->with(['wallet:id,name', 'creator:id,name', 'reviewer:id,name'])
+            ->when(
+                $request->user()->isRole('staff'),
+                fn ($query) => $query->where('created_by', $request->user()->id),
+            )
+            ->when(isset($validated['wallet_id']), fn ($query) => $query->where('wallet_id', $validated['wallet_id']))
+            ->when(isset($validated['date_from']), fn ($query) => $query->whereDate('reconciled_at', '>=', $validated['date_from']))
+            ->when(isset($validated['date_to']), fn ($query) => $query->whereDate('reconciled_at', '<=', $validated['date_to']))
+            ->when(isset($validated['search']), function ($query) use ($validated): void {
+                $search = trim($validated['search']);
+                $query->where(function ($query) use ($search): void {
+                    $query->where('notes', 'like', '%'.$search.'%')
+                        ->orWhereHas('wallet', fn ($walletQuery) => $walletQuery->where('name', 'like', '%'.$search.'%'))
+                        ->orWhereHas('creator', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$search.'%'))
+                        ->orWhereHas('reviewer', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$search.'%'));
+
+                    if (preg_match('/^(?:#?REC-)?0*(\d+)$/i', $search, $matches) === 1) {
+                        $query->orWhereKey((int) $matches[1]);
+                    }
+                });
+            });
+
+        $summary = [
+            'total_count' => (clone $baseQuery)->count(),
+            'pending_count' => (clone $baseQuery)->where('status', 'pending')->count(),
+            'reviewed_count' => (clone $baseQuery)->where('status', 'reviewed')->count(),
+            'matched_count' => (clone $baseQuery)->where('difference', 0)->count(),
+            'shortage_count' => (clone $baseQuery)->where('difference', '<', 0)->count(),
+            'surplus_count' => (clone $baseQuery)->where('difference', '>', 0)->count(),
+            'net_difference' => (clone $baseQuery)->sum('difference'),
+            'total_absolute_difference' => (clone $baseQuery)->selectRaw('COALESCE(SUM(ABS(difference)), 0) as aggregate')->value('aggregate'),
+        ];
+
+        $reconciliations = (clone $baseQuery)
+            ->when(isset($validated['status']), fn ($query) => $query->where('status', $validated['status']))
+            ->latest('reconciled_at')
+            ->latest('id')
+            ->paginate(20);
+
+        return response()->json(['data' => $reconciliations, 'summary' => $summary]);
     }
 
     public function store(Request $request, WalletBalanceService $walletBalances): JsonResponse

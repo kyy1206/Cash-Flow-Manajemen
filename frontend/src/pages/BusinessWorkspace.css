@@ -236,8 +236,231 @@
 }
 
 .business-balance-card strong {
-  color: #4338ca;
+  color: #172033;
   font-size: 20px;
+}
+
+.business-balance-card .business-actions {
+  flex-wrap: wrap;
+}
+
+.business-balance-card .business-actions .business-button {
+  flex: 1 1 auto;
+}
+
+.owner-wallet-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.owner-wallet-card-heading > span:first-child,
+.owner-wallet-quick-actions > span {
+  color: #718096;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .06em;
+}
+
+.owner-wallet-status,
+.owner-wallet-control-badge {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.owner-wallet-status.active,
+.owner-wallet-control-badge {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.owner-wallet-note {
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.owner-wallet-filters {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(140px, 180px) minmax(120px, 150px) auto;
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.owner-wallet-filters input,
+.owner-wallet-filters select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid #dfe5ee;
+  border-radius: 7px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 11px;
+}
+
+.owner-wallet-filters > .business-muted {
+  padding-bottom: 9px;
+  white-space: nowrap;
+}
+
+.owner-wallet-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+}
+
+.owner-wallet-lower-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(300px, 5fr);
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.owner-wallet-activity,
+.owner-wallet-controls {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.owner-wallet-transaction-list {
+  display: grid;
+  gap: 7px;
+}
+
+.owner-wallet-activity-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 9px;
+}
+
+.owner-wallet-activity-filters select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid #dfe5ee;
+  border-radius: 7px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 11px;
+}
+
+.owner-wallet-transaction {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.owner-wallet-transaction-icon {
+  display: grid;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  color: #334155;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.owner-wallet-transaction-description {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.owner-wallet-transaction-description strong {
+  overflow: hidden;
+  color: #172033;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owner-wallet-transaction-description span,
+.owner-wallet-transaction-amount small {
+  overflow: hidden;
+  color: #718096;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owner-wallet-transaction-amount {
+  display: grid;
+  gap: 4px;
+  text-align: right;
+}
+
+.owner-wallet-transaction-amount strong {
+  color: #172033;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.owner-wallet-activity-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #718096;
+  font-size: 10px;
+}
+
+.owner-wallet-control-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.owner-wallet-control-item > div {
+  display: grid;
+  gap: 5px;
+}
+
+.owner-wallet-control-item strong {
+  color: #172033;
+  font-size: 10px;
+}
+
+.owner-wallet-control-item > div > span {
+  color: #64748b;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.owner-wallet-quick-actions {
+  display: grid;
+  gap: 8px;
+  padding-top: 2px;
 }
 
 .business-list {
@@ -398,26 +621,6 @@
   color: #b91c1c;
 }
 
-.owner-payment-form {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.owner-payment-form input,
-.owner-payment-form select {
-  min-width: 100px;
-  max-width: 160px;
-  min-height: 34px;
-  padding: 6px 8px;
-  border: 1px solid #dfe5ee;
-  border-radius: 7px;
-  background: #fff;
-  font: inherit;
-  font-size: 11px;
-}
-
 .owner-pagination {
   display: flex;
   align-items: center;
@@ -431,6 +634,345 @@
 .owner-pagination > div {
   display: flex;
   gap: 7px;
+}
+
+.transaction-monitor-heading {
+  align-items: center;
+}
+
+.transaction-monitor-heading > div:first-child {
+  flex: 1;
+}
+
+.transaction-monitor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.transaction-monitoring {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.transaction-monitor-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 11px;
+}
+
+.transaction-monitor-metrics article {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #e8edf7;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 5px 18px rgba(2, 6, 23, .025);
+}
+
+.transaction-monitor-metrics span,
+.transaction-monitor-metrics small {
+  color: #718096;
+  font-size: 10px;
+}
+
+.transaction-monitor-metrics strong {
+  overflow-wrap: anywhere;
+  color: #172033;
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.transaction-monitor-filters {
+  display: grid;
+  gap: 14px;
+}
+
+.transaction-monitor-tabs {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.transaction-monitor-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #f1f4f9;
+  color: #596579;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.transaction-monitor-tabs button.active {
+  border-color: #dce5fa;
+  background: #eaf0ff;
+  color: #2447b7;
+}
+
+.transaction-monitor-tabs button span {
+  color: #718096;
+  font-size: 9px;
+}
+
+.transaction-filter-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(160px, 220px) auto auto;
+  align-items: center;
+  gap: 9px;
+}
+
+.transaction-filter-form select,
+.transaction-filter-form input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid #dfe5ee;
+  border-radius: 7px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 11px;
+}
+
+.transaction-search {
+  display: block;
+}
+
+.transaction-search input {
+  padding-left: 10px;
+}
+
+.transaction-advanced-filters {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.transaction-advanced-filters label {
+  display: grid;
+  gap: 5px;
+  color: #596579;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.transaction-reset {
+  justify-self: start;
+  padding: 5px 2px;
+  border: 0;
+  background: transparent;
+  color: #596579;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  text-decoration: underline;
+}
+
+.transaction-entry-form {
+  margin-bottom: 0;
+}
+
+.transaction-ledger-wrap {
+  overflow: hidden;
+  padding: 0;
+}
+
+.transaction-ledger-scroll {
+  overflow-x: auto;
+}
+
+.transaction-ledger {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.transaction-ledger th,
+.transaction-ledger td {
+  padding: 13px 14px;
+  border-bottom: 1px solid #edf0f5;
+  color: #475569;
+  font-size: 11px;
+  vertical-align: top;
+}
+
+.transaction-ledger th {
+  background: #f8fafc;
+  color: #718096;
+  font-size: 9px;
+  font-weight: 750;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.transaction-ledger tbody tr:hover {
+  background: #f8fafc;
+}
+
+.transaction-ledger td strong,
+.transaction-ledger td small,
+.transaction-ledger td code {
+  display: block;
+}
+
+.transaction-ledger td strong {
+  color: #172033;
+  font-size: 11px;
+}
+
+.transaction-ledger td small {
+  margin-top: 4px;
+  color: #718096;
+  font-size: 9px;
+}
+
+.transaction-ledger td code {
+  margin-top: 5px;
+  color: #596579;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.transaction-ledger .transaction-description {
+  min-width: 155px;
+  max-width: 260px;
+  white-space: normal;
+}
+
+.transaction-kind {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 99px;
+  background: #f1f4f9;
+  color: #334155;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.transaction-ledger .transaction-amount-cell {
+  min-width: 145px;
+  text-align: right;
+}
+
+.transaction-ledger .transaction-amount-cell strong {
+  color: #172033;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.transaction-status {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 7px;
+  border-radius: 99px;
+  background: #f1f4f9;
+  color: #475569;
+  font-size: 9px;
+}
+
+.transaction-status.corrected {
+  background: #eaf0ff;
+  color: #2447b7;
+}
+
+.transaction-muted {
+  color: #718096;
+  font-size: 10px;
+}
+
+.transaction-empty {
+  padding: 28px !important;
+  color: #718096 !important;
+  text-align: center;
+}
+
+.transaction-ledger-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  color: #718096;
+  font-size: 10px;
+}
+
+.transaction-ledger-footer .owner-pagination {
+  flex: 1;
+  padding: 0;
+}
+
+.transaction-policy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 14px;
+  border: 1px solid #e8edf7;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.transaction-policy-note strong {
+  color: #172033;
+  font-size: 11px;
+}
+
+.transaction-policy-note p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.owner-request-filter-form {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid #edf0f5;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.owner-request-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.owner-request-filter-grid input,
+.owner-request-filter-grid select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid #dfe5ee;
+  border-radius: 7px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 11px;
+}
+
+.owner-request-filter-form .business-actions {
+  justify-content: flex-end;
 }
 
 @media (max-width: 760px) {
@@ -464,6 +1006,96 @@
     align-items: stretch;
     flex-direction: column;
   }
+
+  .owner-wallet-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .owner-wallet-filters > .business-field:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .owner-wallet-filters > .business-muted {
+    padding-bottom: 0;
+  }
+
+  .owner-wallet-lower-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-wallet-activity-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .owner-wallet-activity-filters .business-button {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .transaction-monitor-heading {
+    align-items: flex-start;
+  }
+
+  .transaction-monitor-actions {
+    width: 100%;
+  }
+
+  .transaction-monitor-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .transaction-filter-form {
+    grid-template-columns: 1fr;
+  }
+
+  .transaction-advanced-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-request-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .transaction-ledger-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 420px) {
+  .owner-request-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-wallet-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-wallet-filters > .business-field:first-child {
+    grid-column: auto;
+  }
+
+  .owner-wallet-transaction {
+    align-items: flex-start;
+  }
+
+  .owner-wallet-activity-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-wallet-activity-filters .business-button {
+    grid-column: auto;
+  }
+
+  .owner-wallet-transaction-amount strong {
+    white-space: normal;
+  }
+
+  .owner-wallet-activity-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
 }
 
 .owner-workspace {
@@ -936,98 +1568,6 @@
   font-size: 5px !important;
 }
 
-.owner-debt-columns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: stretch;
-  gap: 9px;
-}
-
-.owner-debt-column {
-  min-width: 0;
-  padding: 10px;
-}
-
-.owner-debt-column .business-section-heading {
-  align-items: flex-start;
-  margin-bottom: 8px;
-}
-
-.owner-debt-list {
-  display: grid;
-  gap: 7px;
-}
-
-.owner-debt-card {
-  display: grid;
-  gap: 7px;
-  padding: 9px;
-  border: 1px solid #e5ebf5;
-  border-radius: 7px;
-  background: #f8faff;
-}
-
-.owner-debt-card-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 7px;
-}
-
-.owner-debt-card-heading > div {
-  display: grid;
-  gap: 3px;
-}
-
-.owner-debt-card-heading strong {
-  color: #172033;
-  font-size: 8px;
-}
-
-.owner-debt-card-heading small,
-.owner-debt-meta,
-.owner-debt-amount small {
-  color: #718096;
-  font-size: 6px;
-}
-
-.owner-debt-amount {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  color: #2447b7;
-}
-
-.owner-debt-amount strong {
-  font-size: 14px;
-}
-
-.owner-debt-meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 5px;
-}
-
-.owner-debt-meta strong {
-  color: #475569;
-  font-size: 6px;
-}
-
-.owner-debt-card .business-status {
-  font-size: 6px !important;
-}
-
-.owner-debt-card .owner-payment-form {
-  align-items: stretch;
-}
-
-.owner-debt-card .owner-payment-form input,
-.owner-debt-card .owner-payment-form select {
-  min-width: 0;
-  flex: 1 1 90px;
-  font-size: 7px;
-}
-
 .owner-reconciliations .owner-section {
   padding: 10px;
 }
@@ -1129,9 +1669,6 @@
     flex: 1 1 100px;
   }
 
-  .owner-debt-columns {
-    grid-template-columns: 1fr;
-  }
 }
 
 .owner-workspace {
@@ -1159,19 +1696,18 @@
 
 .owner-workspace .dashboard-eyebrow,
 .owner-kicker {
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .owner-workspace .dashboard-message {
   margin-bottom: 12px;
-  padding: 10px 12px;
-  font-size: 10px;
+  padding: 12px 14px;
+  font-size: 12px;
 }
 
 .owner-workspace .business-panel,
 .owner-page-heading,
-.owner-metrics article,
-.owner-debt-card {
+.owner-metrics article {
   border-color: var(--owner-border);
   border-radius: 10px;
   background: var(--owner-surface);
@@ -1179,63 +1715,78 @@
 }
 
 .owner-page-heading {
-  min-height: 58px;
-  margin-bottom: 12px;
-  padding: 12px 14px;
+  min-height: 82px;
+  margin-bottom: 16px;
+  padding: 18px 20px;
 }
 
 .owner-page-heading h2 {
-  font-size: 13px;
+  font-size: 26px;
 }
 
 .owner-page-heading p {
-  font-size: 9px;
+  max-width: 760px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.wallet-page-heading h2,
+.reconciliation-heading h2 {
+  font-size: 26px;
+}
+
+.wallet-page-heading p,
+.reconciliation-heading p {
+  font-size: 13px;
+}
+
+.wallet-page-heading .owner-kicker {
+  font-size: 10px;
 }
 
 .owner-workspace .business-section-heading h2,
-.owner-request-toolbar h2,
-.owner-debt-card-heading strong {
+.owner-request-toolbar h2 {
   color: #172033;
-  font-size: 11px;
+  font-size: 15px;
 }
 
 .owner-workspace .business-section-heading small,
 .owner-page-heading p,
 .owner-protocol span {
   color: var(--owner-muted);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .owner-metrics {
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .owner-metrics article {
-  min-height: 68px;
+  min-height: 96px;
   align-content: center;
-  gap: 7px;
-  padding: 12px;
+  gap: 9px;
+  padding: 16px;
   background: linear-gradient(145deg, #fff, var(--owner-soft-surface));
 }
 
 .owner-metrics span {
   color: var(--owner-muted);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .owner-metrics strong {
-  color: #143b91;
-  font-size: clamp(14px, 1.6vw, 18px);
+  color: #172033;
+  font-size: clamp(20px, 1.8vw, 26px);
 }
 
 .owner-workspace .business-button,
 .owner-workspace .dashboard-primary-button {
-  min-height: 32px;
-  padding: 7px 10px;
-  border-radius: 7px;
+  min-height: 38px;
+  padding: 8px 13px;
+  border-radius: 8px;
   background: var(--owner-primary);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .owner-workspace .business-button:hover:not(:disabled),
@@ -1254,26 +1805,25 @@
 }
 
 .owner-workspace .owner-section {
-  margin-bottom: 12px;
-  padding: 14px;
+  margin-bottom: 16px;
+  padding: 18px;
 }
 
-.owner-workspace .owner-section > .business-section-heading,
-.owner-debt-column > .business-section-heading {
+.owner-workspace .owner-section > .business-section-heading {
   margin-bottom: 12px;
 }
 
 .owner-workspace .business-field {
   color: #475569;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .owner-workspace .business-field input,
 .owner-workspace .business-field select {
-  min-height: 34px;
+  min-height: 38px;
   border-color: #dfe5ee;
   border-radius: 7px;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .owner-workspace .owner-filter-row {
@@ -1282,17 +1832,17 @@
 
 .owner-workspace .owner-filter-row small {
   color: var(--owner-muted);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .owner-workspace .owner-request-toolbar .business-field input,
 .owner-workspace .owner-request-toolbar .business-field select {
-  min-height: 34px;
-  font-size: 9px;
+  min-height: 38px;
+  font-size: 12px;
 }
 
 .owner-workspace .owner-request-toolbar .business-field {
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .owner-workspace .business-table-wrap {
@@ -1307,140 +1857,103 @@
 
 .owner-workspace .business-table th,
 .owner-workspace .business-table td {
-  padding: 9px 8px;
+  padding: 11px 9px;
   border-bottom-color: #edf0f5;
-  font-size: 9px;
-  line-height: 1.4;
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .owner-workspace .business-table th {
   background: #f5f7fb;
   color: #64748b;
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .owner-workspace .business-table td small {
   display: block;
   margin-top: 3px;
   color: var(--owner-muted);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .owner-requests .business-table {
-  min-width: 720px;
+  min-width: 920px;
   table-layout: auto;
 }
 
 .owner-requests .business-table th,
 .owner-requests .business-table td {
-  padding: 9px 8px;
-  font-size: 9px;
+  padding: 11px 9px;
+  font-size: 11px;
   overflow-wrap: normal;
 }
 
 .owner-requests .business-table th {
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .owner-requests .business-table .business-button {
-  min-height: 28px;
-  padding: 6px 8px;
-  font-size: 8px;
+  min-height: 32px;
+  padding: 7px 9px;
+  font-size: 10px;
 }
 
-.owner-requests .business-status,
-.owner-debt-card .business-status {
-  padding: 4px 7px;
-  font-size: 8px !important;
+.owner-requests .business-status {
+  padding: 5px 8px;
+  font-size: 9px !important;
+}
+
+.owner-requests .owner-metrics {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .owner-wallet-list {
-  padding: 14px;
+  padding: 18px;
 }
 
 .owner-wallet-list .business-card-grid {
-  gap: 10px;
+  gap: 14px;
 }
 
 .owner-wallet-list .business-balance-card {
-  gap: 8px;
-  padding: 12px;
+  gap: 10px;
+  padding: 16px;
 }
 
 .owner-wallet-list .business-balance-card > span,
 .owner-wallet-list .business-balance-card > small {
   color: var(--owner-muted);
-  font-size: 9px;
-}
-
-.owner-wallet-list .business-balance-card h2 {
-  font-size: 11px;
-}
-
-.owner-wallet-list .business-balance-card strong {
-  color: #143b91;
-  font-size: 17px;
-}
-
-.owner-debt-columns {
-  gap: 12px;
-}
-
-.owner-debt-column {
-  padding: 14px;
-}
-
-.owner-debt-list {
-  gap: 10px;
-}
-
-.owner-debt-card {
-  gap: 9px;
-  padding: 12px;
-  background: var(--owner-soft-surface);
-  box-shadow: none;
-}
-
-.owner-debt-card-heading strong {
   font-size: 10px;
 }
 
-.owner-debt-card-heading small,
-.owner-debt-meta,
-.owner-debt-amount small {
-  color: var(--owner-muted);
-  font-size: 8px;
+.owner-wallet-list .business-balance-card h2 {
+  font-size: 14px;
 }
 
-.owner-debt-amount strong {
-  color: var(--owner-primary);
-  font-size: 17px;
-}
-
-.owner-debt-meta strong {
-  color: #475569;
-  font-size: 8px;
+.owner-wallet-list .business-balance-card strong {
+  color: #172033;
+  font-size: 22px;
 }
 
 .owner-protocol {
-  margin-bottom: 12px;
-  padding: 11px 13px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
   border-color: #dce8ff;
-  border-radius: 9px;
-  font-size: 9px;
+  border-radius: 10px;
+  font-size: 11px;
 }
 
 .owner-protocol span {
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .owner-workspace .owner-pagination {
-  padding-top: 12px;
-  font-size: 9px;
+  padding-top: 14px;
+  font-size: 11px;
 }
 
 .owner-workspace .owner-pagination .business-button {
-  min-height: 29px;
+  min-height: 34px;
 }
 
 @media (max-width: 760px) {
@@ -1460,8 +1973,18 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .owner-requests .owner-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .owner-page-heading {
-    padding: 11px;
+    padding: 14px;
+  }
+
+  .owner-page-heading h2,
+  .wallet-page-heading h2,
+  .reconciliation-heading h2 {
+    font-size: 21px;
   }
 
   .owner-request-toolbar .business-field {
@@ -1752,5 +2275,666 @@
 
   .owner-dashboard .dashboard-kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.reconciliation-heading {
+  margin-bottom: 12px;
+}
+
+.reconciliation-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.reconciliation-breakdown,
+.reconciliation-protocol {
+  min-width: 0;
+}
+
+.reconciliation-breakdown-row {
+  display: grid;
+  grid-template-columns: 76px minmax(50px, 1fr) 34px;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  color: #475569;
+  font-size: 11px;
+}
+
+.reconciliation-breakdown-row strong {
+  color: #172033;
+  text-align: right;
+}
+
+.reconciliation-breakdown-track {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #edf0f5;
+}
+
+.reconciliation-breakdown-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #172033;
+}
+
+.reconciliation-summary-note {
+  display: block;
+  margin-top: 16px;
+  color: #718096;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.reconciliation-protocol ol {
+  display: grid;
+  gap: 9px;
+  margin: 14px 0;
+  padding-left: 20px;
+  color: #475569;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.reconciliation-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid #d8dee8;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.reconciliation-alert > div {
+  display: grid;
+  gap: 4px;
+}
+
+.reconciliation-alert strong {
+  color: #172033;
+  font-size: 12px;
+}
+
+.reconciliation-alert span {
+  color: #64748b;
+  font-size: 10px;
+}
+
+.reconciliation-list-heading {
+  margin-bottom: 14px;
+}
+
+.reconciliation-list-heading h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 14px;
+}
+
+.reconciliation-filters {
+  display: grid;
+  grid-template-columns: minmax(170px, 1.4fr) repeat(4, minmax(130px, 1fr)) auto;
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.reconciliation-filters .business-field {
+  min-width: 0;
+}
+
+.reconciliation-filter-actions {
+  display: flex;
+  gap: 7px;
+  padding-bottom: 1px;
+}
+
+.reconciliation-difference {
+  color: #172033;
+}
+
+@media (max-width: 980px) {
+  .reconciliation-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .reconciliation-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .reconciliation-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reconciliation-filters .business-field:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .reconciliation-filter-actions {
+    grid-column: 1 / -1;
+  }
+
+  .reconciliation-alert {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 420px) {
+  .reconciliation-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .reconciliation-filters .business-field:first-child,
+  .reconciliation-filter-actions {
+    grid-column: auto;
+  }
+}
+
+.debt-page-heading {
+  margin-bottom: 12px;
+}
+
+.debt-page-heading .owner-kicker {
+  color: #64748b;
+  font-size: 9px;
+}
+
+.debt-page-heading h2 {
+  font-size: clamp(20px, 2.2vw, 28px);
+}
+
+.debt-page-heading p {
+  max-width: 760px;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.debt-metrics article {
+  min-height: 100px;
+}
+
+.debt-metrics strong {
+  color: #172033;
+  font-size: clamp(17px, 2vw, 26px);
+}
+
+.debt-metrics article small {
+  color: #718096;
+  font-size: 10px;
+}
+
+.debt-alert-panel {
+  margin-bottom: 12px;
+}
+
+.debt-alert-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.debt-alert-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #e8edf7;
+  border-radius: 9px;
+  background: #f8faff;
+}
+
+.debt-alert-main,
+.debt-alert-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.debt-alert-main > div:first-child {
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+  min-width: 0;
+}
+
+.debt-alert-main strong {
+  overflow-wrap: anywhere;
+  color: #172033;
+  font-size: 12px;
+}
+
+.debt-alert-main small,
+.debt-alert-footer > span {
+  color: #718096;
+  font-size: 9px;
+}
+
+.debt-alert-amount {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: end;
+  gap: 4px;
+  color: #475569;
+  font-size: 9px;
+}
+
+.debt-alert-amount strong {
+  font-size: 13px;
+}
+
+.debt-alert-amount .debt-overdue,
+.debt-due-cell .debt-overdue {
+  background: #f1f5f9;
+  color: #172033 !important;
+}
+
+.debt-alert-footer {
+  align-items: center;
+  padding-top: 9px;
+  border-top: 1px solid #e8edf7;
+}
+
+.debt-workspace {
+  margin-bottom: 12px;
+}
+
+.debt-tabs {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  margin: -4px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8edf7;
+}
+
+.debt-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+}
+
+.debt-tabs button.active {
+  background: #172033;
+  color: #fff;
+  font-weight: 700;
+}
+
+.debt-tabs button span {
+  padding: 2px 6px;
+  border-radius: 99px;
+  background: rgba(148, 163, 184, .18);
+  font-size: 9px;
+}
+
+.debt-tabs button.active span {
+  background: rgba(255, 255, 255, .18);
+}
+
+.debt-filters {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) repeat(2, minmax(140px, 1fr)) auto;
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.debt-filters .business-field {
+  min-width: 0;
+}
+
+.debt-filter-actions {
+  display: flex;
+  gap: 7px;
+}
+
+.debt-ledger-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.debt-ledger {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #e8edf7;
+  border-radius: 9px;
+}
+
+.debt-ledger-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f5f7fb;
+}
+
+.debt-ledger-heading h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 12px;
+}
+
+.debt-ledger-heading small {
+  display: block;
+  margin-top: 4px;
+  color: #718096;
+  font-size: 9px;
+}
+
+.debt-ledger-heading > strong {
+  color: #172033;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.debt-ledger .business-table-wrap {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.debt-ledger .business-table {
+  min-width: 860px;
+}
+
+.debt-ledger .business-table td small,
+.debt-due-cell small {
+  display: block;
+  margin-top: 4px;
+  color: #718096;
+  font-size: 9px;
+}
+
+.debt-due-cell {
+  display: grid;
+  justify-items: start;
+  gap: 3px;
+}
+
+.debt-due-cell .business-status {
+  max-width: 150px;
+  white-space: normal;
+}
+
+.debt-payment-form {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) minmax(90px, .8fr);
+  gap: 5px;
+  min-width: 180px;
+}
+
+.debt-payment-form select,
+.debt-payment-form input {
+  min-width: 0;
+  min-height: 32px;
+  padding: 5px 7px;
+  border: 1px solid #dfe5ee;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-size: 9px;
+}
+
+.debt-payment-form .business-button {
+  min-height: 28px;
+  padding: 5px 7px;
+  font-size: 9px;
+}
+
+.debt-insights-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr);
+  gap: 12px;
+}
+
+.debt-aging-row {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.debt-aging-row > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #475569;
+  font-size: 10px;
+}
+
+.debt-aging-row strong {
+  color: #172033;
+}
+
+.debt-aging-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #edf0f5;
+}
+
+.debt-aging-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #172033;
+}
+
+.debt-insight-note {
+  margin: 13px 0 0;
+  color: #718096;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.debt-policy-panel ul {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding-left: 18px;
+  color: #475569;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .debt-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .debt-filter-actions {
+    justify-content: flex-start;
+  }
+
+  .debt-insights-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .debt-page-heading .owner-heading-actions {
+    justify-content: flex-start;
+  }
+
+  .debt-page-heading h2 {
+    font-size: 20px;
+  }
+
+  .debt-alert-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .debt-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .debt-alert-main,
+  .debt-alert-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .debt-alert-amount {
+    justify-items: start;
+  }
+
+  .debt-metrics article {
+    min-height: 78px;
+  }
+}
+
+.owner-workspace .owner-wallet-list .business-card-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.owner-workspace .owner-wallet-card-heading > span:first-child,
+.owner-workspace .owner-wallet-quick-actions > span {
+  font-size: 10px;
+}
+
+.owner-workspace .owner-wallet-status,
+.owner-workspace .owner-wallet-control-badge {
+  font-size: 10px;
+}
+
+.owner-workspace .owner-wallet-note,
+.owner-workspace .owner-wallet-activity-footer {
+  font-size: 11px;
+}
+
+.owner-workspace .owner-wallet-transaction-description strong,
+.owner-workspace .owner-wallet-control-item strong {
+  font-size: 13px;
+}
+
+.owner-workspace .owner-wallet-transaction-description span,
+.owner-workspace .owner-wallet-transaction-amount small,
+.owner-workspace .owner-wallet-control-item > div > span {
+  font-size: 10px;
+}
+
+.owner-workspace .owner-wallet-transaction-amount strong {
+  color: #172033;
+  font-size: 13px;
+}
+
+.owner-workspace .owner-wallet-filters > .business-muted {
+  font-size: 10px;
+}
+
+.owner-workspace .business-wallet-row .business-income,
+.owner-workspace .business-wallet-row .business-expense,
+.owner-workspace .business-income,
+.owner-workspace .business-expense,
+.owner-workspace .owner-amount,
+.owner-workspace .reconciliation-difference {
+  color: #172033;
+}
+
+.owner-workspace .debt-alert-main strong {
+  font-size: 14px;
+}
+
+.owner-workspace .debt-alert-main small,
+.owner-workspace .debt-alert-footer > span {
+  font-size: 11px;
+}
+
+.owner-workspace .debt-alert-amount {
+  font-size: 11px;
+}
+
+.owner-workspace .debt-alert-amount strong {
+  font-size: 16px;
+}
+
+.owner-workspace .debt-tabs button {
+  padding: 9px 12px;
+  font-size: 12px;
+}
+
+.owner-workspace .debt-tabs button span {
+  font-size: 10px;
+}
+
+.owner-workspace .debt-ledger-heading {
+  padding: 15px 18px;
+}
+
+.owner-workspace .debt-ledger-heading h2 {
+  font-size: 15px;
+}
+
+.owner-workspace .debt-ledger-heading small,
+.owner-workspace .debt-ledger .business-table td small,
+.owner-workspace .debt-due-cell small {
+  font-size: 10px;
+}
+
+.owner-workspace .debt-ledger-heading > strong {
+  font-size: 16px;
+}
+
+.owner-workspace .debt-payment-form select,
+.owner-workspace .debt-payment-form input {
+  min-height: 36px;
+  font-size: 11px;
+}
+
+.owner-workspace .debt-payment-form .business-button {
+  min-height: 32px;
+  font-size: 10px;
+}
+
+.owner-workspace .debt-aging-row > div:first-child {
+  font-size: 12px;
+}
+
+.owner-workspace .debt-insight-note {
+  font-size: 11px;
+}
+
+.owner-workspace .debt-policy-panel ul {
+  font-size: 11px;
+}
+
+.owner-workspace .reconciliation-alert strong {
+  font-size: 14px;
+}
+
+.owner-workspace .reconciliation-alert span {
+  font-size: 11px;
+}
+
+.owner-workspace .business-status,
+.owner-workspace .owner-requests .business-status {
+  font-size: 10px !important;
+}
+
+@media (max-width: 760px) {
+  .owner-workspace .owner-wallet-list .business-card-grid {
+    grid-template-columns: 1fr;
   }
 }

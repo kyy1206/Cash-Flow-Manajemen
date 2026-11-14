@@ -218,6 +218,46 @@
   line-height: 1.6;
 }
 
+.subscription-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subscription-scope-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 13px 16px;
+  border: 1px solid #dce7f8;
+  border-radius: 10px;
+  background: #f7faff;
+}
+
+.subscription-scope-note strong {
+  color: #23395d;
+  font-size: 12px;
+}
+
+.subscription-scope-note p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.subscription-scope-note > span {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border-radius: 20px;
+  background: #e8f0fc;
+  color: #315dc2;
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .subscription-button {
   display: inline-flex;
   min-height: 36px;
@@ -239,12 +279,12 @@
 }
 
 .subscription-button.primary {
-  background: #4f46e5;
+  background: #174bb8;
   color: #fff;
 }
 
 .subscription-button.primary:hover:not(:disabled) {
-  background: #4338ca;
+  background: #123d98;
 }
 
 .subscription-button.secondary {
@@ -259,7 +299,7 @@
 
 .subscription-overview-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(270px, 1.3fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -295,12 +335,12 @@
 
 .subscription-metric-icon.blue {
   background: #eaf3ff;
-  color: #3b82f6;
+  color: #315dc2;
 }
 
 .subscription-metric-icon.purple {
-  background: #f0edff;
-  color: #6d5ce8;
+  background: #edf2fb;
+  color: #315dc2;
 }
 
 .subscription-metric-card h2 {
@@ -327,12 +367,12 @@
   min-height: 146px;
   gap: 12px;
   padding: 17px;
-  border-left: 3px solid #e11d48;
+  border-left: 3px solid #315dc2;
   background: #fff;
 }
 
 .subscription-upcoming-card:not(.has-due) {
-  border-left-color: #10b981;
+  border-left-color: #cbd5e1;
 }
 
 .subscription-upcoming-icon {
@@ -342,8 +382,8 @@
   height: 30px;
   place-items: center;
   border-radius: 8px;
-  background: #fff0f1;
-  color: #e11d48;
+  background: #eaf3ff;
+  color: #315dc2;
   font-size: 17px;
 }
 
@@ -457,7 +497,7 @@
   gap: 13px;
   min-height: 205px;
   padding: 20px;
-  background: #f0f4fa;
+  background: #f7f9fc;
 }
 
 .subscription-savings-icon {
@@ -466,10 +506,10 @@
   width: 34px;
   height: 34px;
   place-items: center;
-  border: 1px solid #ddd9ff;
+  border: 1px solid #dce7f8;
   border-radius: 9px;
-  background: #e8e6ff;
-  color: #5146e5;
+  background: #eaf3ff;
+  color: #315dc2;
   font-size: 16px;
 }
 
@@ -515,7 +555,7 @@
 }
 
 .subscription-simulation-controls strong {
-  color: #047857;
+  color: #174bb8;
 }
 
 .subscription-savings-card > .subscription-button {
@@ -656,13 +696,13 @@
 }
 
 .subscription-status.active {
-  background: #e9f9f1;
-  color: #047857;
+  background: #eaf3ff;
+  color: #315dc2;
 }
 
 .subscription-status.inactive {
-  background: #fff7e6;
-  color: #b45309;
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 .subscription-status.cancelled {
@@ -696,6 +736,11 @@
   color: #334155;
 }
 
+.subscription-row-actions button:disabled {
+  cursor: wait;
+  opacity: .5;
+}
+
 .subscription-row-actions button.danger:hover {
   border-color: #fecaca;
   background: #fef2f2;
@@ -726,6 +771,10 @@
 }
 
 .subscription-alert.error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   border: 1px solid #fecaca;
   background: #fef2f2;
   color: #b91c1c;
@@ -734,6 +783,18 @@
 .subscription-loading {
   background: #fff;
   color: #64748b;
+}
+
+.subscription-button:focus-visible,
+.subscription-row-actions button:focus-visible,
+.subscription-icon-button:focus-visible,
+.subscription-simulation-controls select:focus-visible,
+.subscription-table-tools select:focus-visible,
+.subscription-search:focus-within,
+.subscription-field input:focus-visible,
+.subscription-field select:focus-visible {
+  outline: 2px solid #315dc2;
+  outline-offset: 2px;
 }
 
 .subscription-modal-backdrop {
@@ -837,10 +898,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .subscription-upcoming-card {
-    grid-column: 1 / -1;
-  }
-
   .subscription-insights-grid {
     grid-template-columns: 1fr;
   }
@@ -902,20 +959,22 @@
 
   .subscription-page-heading {
     align-items: flex-start;
+    flex-direction: column;
     padding-top: 20px;
   }
 
-  .subscription-page-heading > .subscription-button {
-    padding: 7px;
-    font-size: 0;
+  .subscription-page-actions,
+  .subscription-page-actions .subscription-button {
+    width: 100%;
   }
 
   .subscription-overview-grid {
     grid-template-columns: 1fr;
   }
 
-  .subscription-upcoming-card {
-    grid-column: auto;
+  .subscription-scope-note {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .subscription-table-header {

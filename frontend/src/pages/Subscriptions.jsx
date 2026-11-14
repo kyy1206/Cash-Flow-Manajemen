@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
 import InsightsLayout from '../components/InsightsLayout';
+import { useAuth } from '../context/useAuth';
 import './Subscriptions.css';
 
 const initialForm = {
@@ -91,7 +92,7 @@ const SubscriptionForm = ({ subscription, saving, error, onClose, onSubmit }) =>
         <header className="subscription-modal-header">
           <div>
             <span className="subscription-eyebrow">PENGELOLAAN RUTIN</span>
-            <h2 id="subscription-form-heading">{subscription ? 'Edit Subscription' : 'Tambah Subscription'}</h2>
+            <h2 id="subscription-form-heading">{subscription ? 'Edit Tagihan Rutin' : 'Tambah Tagihan Rutin'}</h2>
           </div>
           <button type="button" className="subscription-icon-button" onClick={onClose} disabled={saving} aria-label="Tutup form">×</button>
         </header>
@@ -137,12 +138,12 @@ const SubscriptionForm = ({ subscription, saving, error, onClose, onSubmit }) =>
           )}
         </div>
 
-        <p className="subscription-form-hint">Untuk tagihan tahunan, sistem menghitung rata-rata biaya bulanan dari nominal dibagi 12.</p>
+        <p className="subscription-form-hint">Ini hanya catatan dan pengingat, bukan pembayaran otomatis atau transaksi kas. Perubahan status tidak memengaruhi layanan pihak ketiga. Tagihan tahunan dihitung sebagai rata-rata biaya bulanan (nominal dibagi 12).</p>
 
         <footer className="subscription-modal-actions">
           <button type="button" className="subscription-button secondary" onClick={onClose} disabled={saving}>Batal</button>
           <button type="submit" className="subscription-button primary" disabled={saving}>
-            {saving ? 'Menyimpan...' : subscription ? 'Simpan Perubahan' : 'Tambah Subscription'}
+            {saving ? 'Menyimpan...' : subscription ? 'Simpan Perubahan' : 'Tambah Catatan'}
           </button>
         </footer>
       </form>
@@ -151,6 +152,8 @@ const SubscriptionForm = ({ subscription, saving, error, onClose, onSubmit }) =>
 };
 
 const Subscriptions = () => {
+  const { user } = useAuth();
+  const isOwner = user?.role === 'owner';
   const [subscriptions, setSubscriptions] = useState([]);
   const [summary, setSummary] = useState(null);
   const [search, setSearch] = useState('');
@@ -160,6 +163,7 @@ const Subscriptions = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [busySubscriptionId, setBusySubscriptionId] = useState(null);
   const [error, setError] = useState('');
   const [formError, setFormError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -183,7 +187,7 @@ const Subscriptions = () => {
         }
       } catch (requestError) {
         if (active) {
-          setError(requestError.response?.data?.message ?? 'Daftar subscription gagal dimuat. Coba lagi.');
+          setError(requestError.response?.data?.message ?? 'Daftar tagihan rutin gagal dimuat. Coba lagi.');
         }
       } finally {
         if (active) setLoading(false);
@@ -209,7 +213,7 @@ const Subscriptions = () => {
   const monthlySavings = selectedSimulation ? monthlyEquivalent(selectedSimulation) : 0;
   const selectedCategoryBreakdown = summary?.category_breakdown ?? [];
   const totalCategorySpending = selectedCategoryBreakdown.reduce((total, item) => total + item.monthly_total, 0);
-  const categoryColors = ['#174bb8', '#0f766e', '#f59e0b', '#e11d48', '#64748b'];
+  const categoryColors = ['#174bb8', '#315dc2', '#587bd1', '#86a0df', '#b6c6ed'];
   const donutBackground = totalCategorySpending > 0
     ? `conic-gradient(${selectedCategoryBreakdown.map((item, index) => {
       const start = selectedCategoryBreakdown.slice(0, index).reduce((total, entry) => total + entry.monthly_total, 0) / totalCategorySpending * 100;
@@ -241,7 +245,7 @@ const Subscriptions = () => {
     } catch (requestError) {
       const validationErrors = requestError.response?.data?.errors;
       const firstValidationError = validationErrors ? Object.values(validationErrors).flat()[0] : null;
-      setFormError(firstValidationError ?? requestError.response?.data?.message ?? 'Subscription gagal disimpan.');
+      setFormError(firstValidationError ?? requestError.response?.data?.message ?? 'Catatan tagihan gagal disimpan.');
     } finally {
       setSaving(false);
     }
@@ -249,22 +253,28 @@ const Subscriptions = () => {
 
   const updateStatus = async (subscription, status) => {
     setError('');
+    setBusySubscriptionId(subscription.id);
     try {
       await api.patch(`/subscriptions/${subscription.id}`, { status });
       setRefreshKey((current) => current + 1);
     } catch (requestError) {
-      setError(requestError.response?.data?.message ?? 'Status subscription gagal diperbarui.');
+      setError(requestError.response?.data?.message ?? 'Status tagihan gagal diperbarui.');
+    } finally {
+      setBusySubscriptionId(null);
     }
   };
 
   const deleteSubscription = async (subscription) => {
     if (!window.confirm(`Hapus subscription ${subscription.name}?`)) return;
     setError('');
+    setBusySubscriptionId(subscription.id);
     try {
       await api.delete(`/subscriptions/${subscription.id}`);
       setRefreshKey((current) => current + 1);
     } catch (requestError) {
-      setError(requestError.response?.data?.message ?? 'Subscription gagal dihapus.');
+      setError(requestError.response?.data?.message ?? 'Catatan tagihan gagal dihapus.');
+    } finally {
+      setBusySubscriptionId(null);
     }
   };
 
@@ -275,39 +285,70 @@ const Subscriptions = () => {
   };
 
   return (
-    <InsightsLayout active="subscriptions" title="Kelola Subscription & Tagihan Rutin" eyebrow="AUTOPILOT TAGIHAN">
+    <InsightsLayout
+      active="subscriptions"
+      title={isOwner ? 'Tagihan & Langganan' : 'Tagihan & Langganan Saya'}
+      eyebrow="PENCATATAN BERKALA"
+    >
       <div className="subscription-content">
         <section className="subscription-page-heading">
           <div>
-            <p>Pantau semua layanan berlangganan, siklus pembayaran, dan potensi penghematan setiap bulan.</p>
+            <p>Catat layanan berulang, pantau nominal, dan periksa tanggal jatuh tempo.</p>
           </div>
           <div className="subscription-page-actions">
-            <button type="button" className="subscription-button secondary" onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}>Filter Layanan</button>
-            <button type="button" className="subscription-button primary" onClick={openCreateForm}>+ Tambah Subscription</button>
+            <button type="button" className="subscription-button primary" onClick={openCreateForm}>+ Tambah Tagihan</button>
           </div>
         </section>
 
-        {error && <div className="subscription-alert error" role="alert">{error}</div>}
-        {loading && <div className="subscription-loading" role="status">Memuat data subscription...</div>}
+        <section className="subscription-scope-note" aria-label="Batas fungsi tagihan rutin">
+          <div>
+            <strong>{isOwner ? 'Ruang lingkup Owner' : 'Catatan akun'}</strong>
+            <p>{isOwner
+              ? 'Owner dapat mengelola catatan dan pengingat pada akunnya sendiri. Data ini tidak dibagikan otomatis ke akun Supervisor atau Staf.'
+              : 'Daftar ini hanya berisi catatan pada akun Anda dan tidak dibagikan otomatis ke akun lain.'} Ini bukan pengelolaan paket atau lisensi Bocor Halus; aplikasi belum menyediakan metode pembayaran maupun invoice layanan. Perubahan status hanya berlaku pada catatan ini, bukan pada layanan pihak ketiga, saldo, atau transaksi kas.
+            </p>
+          </div>
+          <span>Catatan saja · tanpa pembayaran</span>
+        </section>
+
+        {error && (
+          <div className="subscription-alert error" role="alert">
+            <span>{error}</span>
+            {!loading && (
+              <button type="button" className="subscription-button secondary" onClick={() => setRefreshKey((current) => current + 1)}>
+                Coba lagi
+              </button>
+            )}
+          </div>
+        )}
+        {loading && <div className="subscription-loading" role="status">Memuat catatan tagihan...</div>}
 
         {!loading && !error && (
           <>
             <section className="subscription-overview-grid">
               <MetricCard
-                eyebrow="TOTAL BEBAN SUBSCRIPTION"
-                title="Rata-rata per bulan"
-                value={formatCurrency(summary?.monthly_total)}
-                footnote={`${summary?.active_count ?? 0} layanan aktif`}
+                eyebrow="LAYANAN AKTIF"
+                title="Catatan berjalan"
+                value={summary?.active_count ?? 0}
+                footnote="Tidak termasuk yang dijeda atau dihentikan"
                 icon="▣"
                 tone="blue"
               />
               <MetricCard
-                eyebrow="PROPORSI DARI BUDGET"
-                title="Porsi anggaran bulanan"
+                eyebrow="BIAYA BERKALA"
+                title="Rata-rata per bulan"
+                value={formatCurrency(summary?.monthly_total)}
+                footnote="Ekuivalen bulanan dari layanan aktif"
+                icon="↻"
+                tone="blue"
+              />
+              <MetricCard
+                eyebrow="PORSI ANGGARAN"
+                title="Dari rencana bulanan akun"
                 value={`${summary?.monthly_budget_share ?? 0}%`}
-                footnote={summary?.monthly_budget ? `Dari ${formatCurrency(summary.monthly_budget)} budget bulanan` : 'Atur budget bulanan untuk melihat porsinya'}
+                footnote={summary?.monthly_budget ? `Berdasarkan ${formatCurrency(summary.monthly_budget)}` : 'Belum ada rencana anggaran bulanan'}
                 icon="↗"
-                tone="purple"
+                tone="blue"
               />
               <article className={`subscription-upcoming-card ${dueSoonCount ? 'has-due' : ''}`}>
                 <span className="subscription-upcoming-icon">◷</span>
@@ -342,7 +383,7 @@ const Subscriptions = () => {
                 <div>
                   <span className="subscription-eyebrow">DISTRIBUSI KATEGORI</span>
                   <h2>Rata-rata biaya bulanan</h2>
-                  <p>Rincian beban untuk semua layanan aktif.</p>
+                  <p>Rincian biaya ekuivalen untuk semua layanan aktif.</p>
                   <div className="subscription-legend">
                     {selectedCategoryBreakdown.map((item, index) => (
                       <div key={item.category}>
@@ -363,8 +404,8 @@ const Subscriptions = () => {
                 <div className="subscription-savings-icon">✦</div>
                 <div className="subscription-savings-content">
                   <span className="subscription-eyebrow">SIMULASI PENGHEMATAN</span>
-                  <h2>Catatan cerdas: Anggaran berlangganan</h2>
-                  <p>Pilih layanan yang sedang dipertimbangkan untuk dihentikan. Simulasi ini memperkirakan biaya yang bisa dihemat tanpa mengubah subscription Anda.</p>
+                  <h2>Simulasikan biaya yang bisa dihemat</h2>
+                  <p>Pilih layanan yang sedang dipertimbangkan untuk dihentikan. Simulasi ini memperkirakan biaya yang bisa dihemat tanpa mengubah catatan atau layanan pihak ketiga.</p>
                   <div className="subscription-simulation-controls">
                     <select value={selectedSimulationId} onChange={(event) => setSelectedSimulationId(event.target.value)} aria-label="Pilih subscription untuk simulasi">
                       {activeSubscriptions.length === 0 && <option value="">Tidak ada layanan aktif</option>}
@@ -380,7 +421,7 @@ const Subscriptions = () => {
                     setEditingSubscription(selectedSimulation);
                     setFormError('');
                   }}>
-                    Review layanan →
+                    Tinjau &amp; edit →
                   </button>
                 )}
               </article>
@@ -389,8 +430,8 @@ const Subscriptions = () => {
             <section className="subscription-table-section">
               <header className="subscription-table-header">
                 <div>
-                  <h2>Daftar Subscription &amp; Tagihan Berkala <span>{subscriptions.length}</span></h2>
-                  <p>Kelola status, nominal, dan tanggal jatuh tempo layanan.</p>
+                  <h2>Daftar Tagihan Rutin <span>{subscriptions.length}</span></h2>
+                  <p>Kelola catatan, status, nominal, dan jatuh tempo. Status hanya berlaku di aplikasi.</p>
                 </div>
                 <div className="subscription-table-tools">
                   <label className="subscription-search">
@@ -403,7 +444,6 @@ const Subscriptions = () => {
                     <option value="inactive">Dijeda</option>
                     <option value="cancelled">Dihentikan</option>
                   </select>
-                  <button type="button" className="subscription-button primary" onClick={openCreateForm}>+ Tambah</button>
                 </div>
               </header>
 
@@ -411,7 +451,7 @@ const Subscriptions = () => {
                 <table className="subscription-table">
                   <thead>
                     <tr>
-                      <th>LAYANAN / NAMA SUBSCRIPTION</th>
+                      <th>LAYANAN</th>
                       <th>KATEGORI</th>
                       <th>NOMINAL</th>
                       <th>PERIODE</th>
@@ -434,31 +474,31 @@ const Subscriptions = () => {
                             <button type="button" onClick={() => {
                               setEditingSubscription(subscription);
                               setFormError('');
-                            }} aria-label={`Edit ${subscription.name}`} title="Edit">✎</button>
+                            }} aria-label={`Edit ${subscription.name}`} title="Edit" disabled={busySubscriptionId === subscription.id}>✎</button>
                             {subscription.status === 'active' ? (
-                              <button type="button" onClick={() => updateStatus(subscription, 'inactive')} aria-label={`Jeda ${subscription.name}`} title="Jeda layanan">Ⅱ</button>
+                              <button type="button" onClick={() => updateStatus(subscription, 'inactive')} aria-label={`Jeda catatan ${subscription.name}`} title="Jeda catatan" disabled={busySubscriptionId === subscription.id}>Ⅱ</button>
                             ) : subscription.status === 'inactive' ? (
-                              <button type="button" onClick={() => updateStatus(subscription, 'active')} aria-label={`Aktifkan ${subscription.name}`} title="Aktifkan kembali">▶</button>
+                              <button type="button" onClick={() => updateStatus(subscription, 'active')} aria-label={`Aktifkan catatan ${subscription.name}`} title="Aktifkan catatan kembali" disabled={busySubscriptionId === subscription.id}>▶</button>
                             ) : null}
                             {subscription.status !== 'cancelled' && (
-                              <button type="button" className="danger" onClick={() => updateStatus(subscription, 'cancelled')} aria-label={`Hentikan ${subscription.name}`} title="Hentikan layanan">⊘</button>
+                              <button type="button" className="danger" onClick={() => updateStatus(subscription, 'cancelled')} aria-label={`Tandai catatan ${subscription.name} dihentikan`} title="Tandai catatan dihentikan" disabled={busySubscriptionId === subscription.id}>⊘</button>
                             )}
-                            <button type="button" className="danger" onClick={() => deleteSubscription(subscription)} aria-label={`Hapus ${subscription.name}`} title="Hapus">⌫</button>
+                            <button type="button" className="danger" onClick={() => deleteSubscription(subscription)} aria-label={`Hapus catatan ${subscription.name}`} title="Hapus catatan" disabled={busySubscriptionId === subscription.id}>⌫</button>
                           </div>
                         </td>
                       </tr>
                     ))}
                     {filteredSubscriptions.length === 0 && (
                       <tr><td colSpan="7" className="subscription-empty-state">
-                        {subscriptions.length === 0 ? 'Belum ada subscription. Tambahkan layanan pertama Anda.' : 'Tidak ada subscription yang cocok dengan pencarian atau filter.'}
+                        {subscriptions.length === 0 ? 'Belum ada catatan tagihan. Tambahkan layanan pertama Anda.' : 'Tidak ada catatan yang cocok dengan pencarian atau filter.'}
                       </td></tr>
                     )}
                   </tbody>
                 </table>
               </div>
               <footer className="subscription-table-footer">
-                <span>Menampilkan {filteredSubscriptions.length} dari {subscriptions.length} layanan</span>
-                <span>Nilai tahunan ditampilkan sebagai ekuivalen biaya bulanan pada ringkasan.</span>
+                <span>Menampilkan {filteredSubscriptions.length} dari {subscriptions.length} catatan</span>
+                <span>Nominal tahunan diringkas sebagai ekuivalen biaya bulanan.</span>
               </footer>
             </section>
           </>

@@ -17,7 +17,7 @@ const currency = (amount = 0) => new Intl.NumberFormat('id-ID', {
 
 const downloadSummary = (dashboard, period) => {
   const rows = [
-    ['Ringkasan supervisor', period],
+    ['Ringkasan keuangan usaha', period],
     ['Saldo kas dan rekening', dashboard.summary.total_balance],
     ['Pemasukan periode', dashboard.summary.income_total],
     ['Pengeluaran periode', dashboard.summary.expense_total],
@@ -39,10 +39,287 @@ const downloadSummary = (dashboard, period) => {
   const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = `ringkasan-supervisor-${period}.csv`;
+  anchor.download = `ringkasan-usaha-${period}.csv`;
   anchor.click();
   URL.revokeObjectURL(url);
 };
+
+function OwnerExecutiveDashboard({
+  dashboard,
+  period,
+  onPeriodChange,
+  reconciliations,
+  notifications,
+  error,
+  loading,
+  onDownload,
+}) {
+  const summary = dashboard?.summary;
+  const wallets = dashboard?.wallets ?? [];
+  const transactions = dashboard?.recent_transactions ?? [];
+  const pendingRequests = dashboard?.pending_requests_preview ?? [];
+  const cashFlow = dashboard?.daily_cash_flow ?? [];
+  const obligations = dashboard?.upcoming_obligations ?? {
+    count: 0,
+    receivable_total: 0,
+    payable_total: 0,
+    net_total: 0,
+    items: [],
+  };
+  const latestReconciliation = reconciliations[0];
+  const maxDailyFlow = Math.max(1, ...cashFlow.map((day) => Math.max(day.income, day.expense)));
+  const monthLabel = new Date(`${period}-01T12:00:00`).toLocaleDateString('id-ID', {
+    month: 'long',
+    year: 'numeric',
+  });
+  const activeDays = Math.max(1, cashFlow.length);
+
+  return (
+    <div className="owner-executive-dashboard">
+      <header className="owner-dashboard-heading">
+        <div>
+          <span className="supervisor-eyebrow">IKHTISAR EKSEKUTIF PEMILIK</span>
+          <h1>Dashboard Keuangan Usaha</h1>
+          <p>Saldo, arus kas, pengajuan, dan rekonsiliasi berdasarkan data usaha.</p>
+        </div>
+        <div className="owner-dashboard-actions">
+          <input type="month" aria-label="Pilih periode dashboard" value={period} onChange={(event) => onPeriodChange(event.target.value)} />
+          <button type="button" className="supervisor-button secondary" onClick={onDownload} disabled={!dashboard}>
+            Unduh ringkasan CSV
+          </button>
+          <Link to="/transactions" className="supervisor-button primary">＋ Catat transaksi</Link>
+        </div>
+      </header>
+
+      {error && <div className="supervisor-alert error" role="alert">{error}</div>}
+      {loading && !dashboard && <div className="supervisor-alert" role="status">Memuat dashboard usaha...</div>}
+
+      {summary && (
+        <>
+          <section className="owner-executive-kpi-grid" aria-label="Ikhtisar keuangan">
+            <article className="owner-executive-kpi">
+              <div className="owner-kpi-heading"><span>Likuiditas tersedia</span><b aria-hidden="true">▤</b></div>
+              <strong>{currency(summary.total_balance)}</strong>
+              <small>{summary.wallet_count} sumber dana aktif</small>
+              <div className="owner-kpi-breakdown">
+                {wallets.slice(0, 2).map((wallet) => (
+                  <span key={wallet.id}><span>{wallet.name}</span><b>{currency(wallet.balance)}</b></span>
+                ))}
+                {!wallets.length && <span>Belum ada sumber dana.</span>}
+              </div>
+            </article>
+
+            <article className="owner-executive-kpi">
+              <div className="owner-kpi-heading"><span>Arus kas bersih · {monthLabel}</span><b aria-hidden="true">↗</b></div>
+              <strong>{currency(summary.net_flow)}</strong>
+              <small>Pemasukan dikurangi pengeluaran terposting</small>
+              <div className="owner-kpi-breakdown">
+                <span><span>Pemasukan</span><b>{currency(summary.income_total)}</b></span>
+                <span><span>Pengeluaran</span><b>{currency(summary.expense_total)}</b></span>
+              </div>
+            </article>
+
+            <article className="owner-executive-kpi">
+              <div className="owner-kpi-heading"><span>Rekonsiliasi terakhir</span><b aria-hidden="true">✓</b></div>
+              <strong>{latestReconciliation ? currency(latestReconciliation.difference) : 'Belum ada'}</strong>
+              <small>
+                {latestReconciliation
+                  ? `${latestReconciliation.wallet?.name ?? 'Sumber dana'} · ${latestReconciliation.reconciled_at}`
+                  : 'Belum ada hasil hitung kas'}
+              </small>
+              <div className="owner-kpi-breakdown">
+                <span>Status</span>
+                <b>{latestReconciliation?.status === 'pending' ? 'Menunggu review' : latestReconciliation ? 'Sudah direview' : 'Belum tersedia'}</b>
+              </div>
+            </article>
+
+            <article className="owner-executive-kpi">
+              <div className="owner-kpi-heading"><span>Kewajiban 14 hari ke depan</span><b aria-hidden="true">◷</b></div>
+              <strong>{currency(obligations.net_total)}</strong>
+              <small>{obligations.count} utang/piutang jatuh tempo</small>
+              <div className="owner-kpi-breakdown">
+                <span><span>Piutang</span><b>{currency(obligations.receivable_total)}</b></span>
+                <span><span>Utang</span><b>{currency(obligations.payable_total)}</b></span>
+              </div>
+            </article>
+          </section>
+
+          <div className="owner-executive-grid">
+            <div className="owner-executive-main">
+              <section className="supervisor-panel owner-cashflow-panel">
+                <header className="supervisor-panel-heading">
+                  <div>
+                    <span className="supervisor-eyebrow">ARUS KAS TERCATAT</span>
+                    <h2>Arus kas harian · {monthLabel}</h2>
+                  </div>
+                </header>
+                {cashFlow.length ? (
+                  <>
+                    <div className="owner-cashflow-summary">
+                      <span>Rata-rata pemasukan hari aktif <b>{currency(summary.income_total / activeDays)}</b></span>
+                      <span>Rata-rata pengeluaran hari aktif <b>{currency(summary.expense_total / activeDays)}</b></span>
+                    </div>
+                    <div className="owner-cashflow-scroll">
+                      <div className="owner-cashflow-chart" role="img" aria-label={`Grafik pemasukan dan pengeluaran harian ${monthLabel}`}>
+                        {cashFlow.map((day) => (
+                          <div className="owner-cashflow-day" key={day.date} title={`${day.date} · Masuk ${currency(day.income)} · Keluar ${currency(day.expense)}`}>
+                            <div className="owner-cashflow-bars">
+                              <i className="income" style={{ height: `${day.income ? Math.max(4, day.income / maxDailyFlow * 100) : 0}%` }} />
+                              <i className="expense" style={{ height: `${day.expense ? Math.max(4, day.expense / maxDailyFlow * 100) : 0}%` }} />
+                            </div>
+                            <span>{Number(day.date.slice(-2))}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="owner-cashflow-legend">
+                      <span><i className="income" /> Pemasukan</span>
+                      <span><i className="expense" /> Pengeluaran</span>
+                      <small>Hanya transaksi yang sudah terposting.</small>
+                    </div>
+                  </>
+                ) : <p className="owner-dashboard-empty">Belum ada pemasukan atau pengeluaran terposting pada periode ini.</p>}
+              </section>
+
+              <div className="owner-dashboard-lower-grid">
+                <section className="supervisor-panel">
+                  <header className="supervisor-panel-heading">
+                    <div><span className="supervisor-eyebrow">SALDO RIIL</span><h2>Sumber dana</h2></div>
+                    <Link to="/wallets">Lihat semua →</Link>
+                  </header>
+                  <div className="owner-dashboard-list">
+                    {wallets.map((wallet) => (
+                      <div className="owner-dashboard-row" key={wallet.id}>
+                        <div><strong>{wallet.name}</strong><small>{wallet.type === 'cash' ? 'Kas tunai' : wallet.type === 'bank' ? 'Rekening bank' : 'Sumber dana lain'}</small></div>
+                        <b>{currency(wallet.balance)}</b>
+                      </div>
+                    ))}
+                    {!wallets.length && <p className="owner-dashboard-empty">Belum ada sumber dana aktif.</p>}
+                  </div>
+                </section>
+
+                <section className="supervisor-panel">
+                  <header className="supervisor-panel-heading">
+                    <div><span className="supervisor-eyebrow">KONTROL ANGGARAN</span><h2>Anggaran kategori</h2></div>
+                    <Link to="/budgets">Kelola →</Link>
+                  </header>
+                  <div className="owner-dashboard-list">
+                    {(dashboard.budget_categories ?? []).slice(0, 5).map((item) => (
+                      <div className="owner-budget-row" key={item.category}>
+                        <div><strong>{item.category}</strong><span>{currency(item.spent)} / {currency(item.amount)}</span></div>
+                        <div className="owner-budget-track"><i className={item.status} style={{ width: `${Math.min(100, Number(item.percentage))}%` }} /></div>
+                      </div>
+                    ))}
+                    {!dashboard.budget_categories?.length && <p className="owner-dashboard-empty">Belum ada alokasi anggaran.</p>}
+                  </div>
+                </section>
+              </div>
+
+              <section className="supervisor-panel">
+                <header className="supervisor-panel-heading">
+                  <div><span className="supervisor-eyebrow">BUKU KAS</span><h2>Transaksi terbaru</h2></div>
+                  <Link to="/transactions">Buka semua →</Link>
+                </header>
+                <div className="owner-dashboard-list">
+                  {transactions.slice(0, 5).map((transaction) => (
+                    <div className="owner-dashboard-row owner-transaction-row" key={transaction.id}>
+                      <div>
+                        <strong>{transaction.description || transaction.merchant || transaction.category || 'Transaksi'}</strong>
+                        <small>{transaction.date} · {transaction.wallet ?? 'Sumber dana'} · {transaction.category ?? 'Tanpa kategori'}</small>
+                      </div>
+                      <b>{transaction.transaction_type === 'expense' ? '−' : transaction.transaction_type === 'income' ? '+' : '↔'} {currency(transaction.amount)}</b>
+                    </div>
+                  ))}
+                  {!transactions.length && <p className="owner-dashboard-empty">Belum ada transaksi terposting pada periode ini.</p>}
+                </div>
+              </section>
+            </div>
+
+            <aside className="owner-executive-side">
+              <section className="supervisor-panel">
+                <header className="supervisor-panel-heading">
+                  <div><span className="supervisor-eyebrow">ANTREAN OPERASIONAL</span><h2>Pengajuan menunggu</h2></div>
+                  <Link to="/requests">{summary.pending_requests} →</Link>
+                </header>
+                <div className="owner-dashboard-list">
+                  {pendingRequests.map((requestItem) => (
+                    <article className="owner-request-item" key={requestItem.id}>
+                      <div><strong>{requestItem.purpose}</strong><small>{requestItem.requester ?? 'Staff'} · {requestItem.category ?? 'Tanpa kategori'}</small></div>
+                      <b>{currency(requestItem.amount)}</b>
+                    </article>
+                  ))}
+                  {!pendingRequests.length && <p className="owner-dashboard-empty">Tidak ada pengajuan yang menunggu.</p>}
+                </div>
+                <p className="owner-dashboard-note">Keputusan pengajuan dilakukan oleh Supervisor.</p>
+                <Link className="owner-dashboard-text-link" to="/requests">Pantau semua pengajuan →</Link>
+              </section>
+
+              <section className="supervisor-panel">
+                <header className="supervisor-panel-heading">
+                  <div><span className="supervisor-eyebrow">HITUNG FISIK KAS</span><h2>Rekonsiliasi terbaru</h2></div>
+                  <Link to="/reconciliations">Lihat →</Link>
+                </header>
+                <div className="owner-dashboard-list">
+                  {reconciliations.slice(0, 3).map((item) => (
+                    <div className="owner-dashboard-row" key={item.id}>
+                      <div><strong>{item.wallet?.name ?? 'Sumber dana'}</strong><small>{item.reconciled_at} · {item.status === 'pending' ? 'Menunggu review' : 'Sudah direview'}</small></div>
+                      <b>{currency(item.difference)}</b>
+                    </div>
+                  ))}
+                  {!reconciliations.length && <p className="owner-dashboard-empty">Belum ada rekonsiliasi.</p>}
+                </div>
+                <Link className="owner-dashboard-text-link" to="/reconciliations">Buat atau lihat rekonsiliasi →</Link>
+              </section>
+
+              <section className="supervisor-panel">
+                <header className="supervisor-panel-heading">
+                  <div><span className="supervisor-eyebrow">JATUH TEMPO 14 HARI</span><h2>Utang & piutang</h2></div>
+                  <Link to="/debts">Kelola →</Link>
+                </header>
+                <div className="owner-dashboard-list">
+                  {obligations.items.map((item) => (
+                    <div className="owner-dashboard-row" key={item.id}>
+                      <div><strong>{item.counterparty}</strong><small>{item.type === 'receivable' ? 'Piutang' : 'Utang'} · {item.due_date}</small></div>
+                      <b>{currency(item.remaining_amount)}</b>
+                    </div>
+                  ))}
+                  {!obligations.items.length && <p className="owner-dashboard-empty">Tidak ada utang/piutang jatuh tempo dalam 14 hari.</p>}
+                </div>
+                <Link className="owner-dashboard-text-link" to="/debts">Lihat semua utang & piutang →</Link>
+              </section>
+
+              <section className="supervisor-panel">
+                <header className="supervisor-panel-heading">
+                  <div><span className="supervisor-eyebrow">AKTIVITAS SISTEM</span><h2>Notifikasi terbaru</h2></div>
+                  <Link to="/notifications">Semua →</Link>
+                </header>
+                <div className="owner-dashboard-list">
+                  {notifications.slice(0, 3).map((notification) => (
+                    <div className="owner-notification-item" key={notification.id}>
+                      <strong>{notification.type?.replaceAll('_', ' ') ?? 'Pembaruan'}</strong>
+                      <p>{notification.message}</p>
+                    </div>
+                  ))}
+                  {!notifications.length && <p className="owner-dashboard-empty">Tidak ada notifikasi terbaru.</p>}
+                </div>
+              </section>
+
+              <section className="owner-protocol-card">
+                <span className="supervisor-eyebrow">KONTROL KEUANGAN</span>
+                <h2>Aturan pencatatan</h2>
+                <ul>
+                  <li>Transaksi terposting tidak dapat diedit atau dihapus; koreksi dilakukan melalui reversal Owner.</li>
+                  <li>Pengeluaran Staff yang wajib approval menunggu keputusan Supervisor sebelum memengaruhi saldo.</li>
+                  <li>Transfer antar sumber dana tidak dihitung sebagai pemasukan atau pengeluaran.</li>
+                </ul>
+              </section>
+            </aside>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 function BusinessDashboard() {
   const { user, logout } = useAuth();
@@ -706,6 +983,23 @@ function BusinessDashboard() {
     );
   }
 
+  if (user?.role === 'owner') {
+    return (
+      <SupervisorFrame active="dashboard" unreadCount={unreadCount} onLogout={logoutUser}>
+        <OwnerExecutiveDashboard
+          dashboard={dashboard}
+          period={period}
+          onPeriodChange={setPeriod}
+          reconciliations={reconciliations}
+          notifications={notifications}
+          error={error}
+          loading={loading}
+          onDownload={() => dashboard && downloadSummary(dashboard, period)}
+        />
+      </SupervisorFrame>
+    );
+  }
+
   return (
     <SupervisorFrame active="dashboard" unreadCount={unreadCount} onLogout={logoutUser}>
       <div className="supervisor-dashboard-content">
@@ -725,8 +1019,8 @@ function BusinessDashboard() {
           <>
             <section className="dashboard-kpi-grid" aria-label="Ringkasan periode">
               <article className="dashboard-kpi"><span className="dashboard-kpi-label">Total saldo</span><strong>{currency(summary.total_balance)}</strong><small>{summary.wallet_count} sumber dana aktif</small></article>
-              <article className="dashboard-kpi"><span className="dashboard-kpi-label">Pemasukan periode</span><strong style={{ color: '#059669' }}>{currency(summary.income_total)}</strong><small>Uang yang benar-benar diterima</small></article>
-              <article className="dashboard-kpi"><span className="dashboard-kpi-label">Pengeluaran periode</span><strong style={{ color: '#dc2626' }}>{currency(summary.expense_total)}</strong><small>Transaksi yang sudah diposting</small></article>
+              <article className="dashboard-kpi"><span className="dashboard-kpi-label">Pemasukan periode</span><strong>{currency(summary.income_total)}</strong><small>Uang yang benar-benar diterima</small></article>
+              <article className="dashboard-kpi"><span className="dashboard-kpi-label">Pengeluaran periode</span><strong>{currency(summary.expense_total)}</strong><small>Transaksi yang sudah diposting</small></article>
               <article className="dashboard-kpi"><span className="dashboard-kpi-label">Pengajuan menunggu</span><strong>{summary.pending_requests}</strong><small>Belum memengaruhi saldo</small></article>
             </section>
             <section className="business-dashboard-grid">

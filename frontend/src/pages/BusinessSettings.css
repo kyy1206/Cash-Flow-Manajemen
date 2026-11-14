@@ -1,0 +1,244 @@
+.business-settings-page {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  max-width: 1540px;
+  margin: 0 auto;
+  color: #17243b;
+}
+
+.business-settings-heading,
+.business-settings-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.business-settings-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #8490a3;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.business-settings-breadcrumb strong { color: #174bb8; }
+.business-settings-breadcrumb span:last-child { padding: 4px 8px; border-radius: 20px; background: #e9efff; color: #174bb8; }
+
+.business-settings-heading h1 {
+  margin: 8px 0 5px;
+  color: #17243b;
+  font-size: clamp(24px, 2.4vw, 32px);
+  letter-spacing: -0.035em;
+}
+
+.business-settings-heading p {
+  max-width: 800px;
+  margin: 0;
+  color: #748198;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.settings-history-link,
+.settings-text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 10px 12px;
+  border: 1px solid #e1e7f0;
+  border-radius: 7px;
+  background: #fff;
+  color: #3155a5;
+  font-size: 10px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.settings-history-link:hover,
+.settings-text-link:hover { background: #f3f6ff; }
+
+.business-settings-message {
+  padding: 11px 14px;
+  border-radius: 7px;
+  font-size: 11px;
+}
+
+.business-settings-message.error { border: 1px solid #efcaca; background: #fff2f2; color: #923d43; }
+.business-settings-message.success { border: 1px solid #cce6d8; background: #f0faf4; color: #286d4b; }
+.business-settings-message.error button { margin-left: 10px; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 750; text-decoration: underline; cursor: pointer; }
+.business-settings-loading { padding: 30px; border-radius: 9px; background: #fff; color: #748198; text-align: center; }
+
+.business-settings-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.business-settings-metrics article {
+  display: grid;
+  min-height: 126px;
+  align-content: space-between;
+  gap: 8px;
+  padding: 15px;
+  border: 1px solid #e8ecf3;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(22 37 66 / 3%);
+}
+
+.business-settings-metrics article > span { color: #748198; font-size: 10px; font-weight: 700; }
+.business-settings-metrics strong { color: #17243b; font-size: clamp(19px, 2vw, 25px); letter-spacing: -0.035em; }
+.business-settings-metrics small { color: #8994a6; font-size: 9px; line-height: 1.4; }
+
+.business-settings-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 15px;
+  border: 1px solid #dfe7f8;
+  border-radius: 9px;
+  background: #f5f8ff;
+}
+
+.business-settings-notice > span {
+  display: grid;
+  flex: 0 0 23px;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e3ebff;
+  color: #174bb8;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.business-settings-notice strong { color: #263d75; font-size: 11px; }
+.business-settings-notice p { margin: 4px 0 0; color: #687895; font-size: 10px; line-height: 1.55; }
+
+.business-settings-main-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 14px;
+}
+
+.business-settings-card {
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid #e8ecf3;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(22 37 66 / 3%);
+}
+
+.business-settings-card > header { justify-content: flex-start; margin-bottom: 15px; }
+.settings-section-icon {
+  display: grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 9px;
+  background: #edf2ff;
+  color: #174bb8;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.business-settings-card > header h2 { margin: 0; color: #17243b; font-size: 15px; letter-spacing: -0.015em; }
+.business-settings-card > header p { margin: 4px 0 0; color: #7b879a; font-size: 10px; line-height: 1.5; }
+
+.business-settings-card form { display: grid; gap: 14px; }
+.settings-field { display: grid; min-width: 0; gap: 6px; color: #55637b; font-size: 10px; font-weight: 750; }
+.settings-field input,
+.settings-field select {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #dfe5ef;
+  border-radius: 6px;
+  background: #fff;
+  color: #29364d;
+  font: inherit;
+  font-size: 11px;
+}
+
+.settings-field input:focus-visible,
+.settings-field select:focus-visible,
+.business-settings-card button:focus-visible,
+.settings-history-link:focus-visible,
+.settings-text-link:focus-visible {
+  outline: 3px solid #aebffc;
+  outline-offset: 2px;
+}
+
+.settings-field small { color: #8792a4; font-size: 9px; font-weight: 500; line-height: 1.45; }
+.business-settings-form-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 3px; }
+.business-settings-form-footer > span { color: #8792a4; font-size: 9px; line-height: 1.4; }
+.business-settings-form-footer button {
+  min-height: 37px;
+  padding: 8px 13px;
+  border: 0;
+  border-radius: 6px;
+  background: #174bb8;
+  color: #fff;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.business-settings-form-footer button:hover:not(:disabled) { background: #103c9c; }
+.business-settings-form-footer button:disabled { cursor: not-allowed; opacity: 0.6; }
+.business-settings-categories ul { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.business-settings-categories li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border-radius: 6px; background: #f7f8fb; color: #3e4c63; font-size: 10px; }
+.business-settings-categories li b { color: #536fa6; font-size: 9px; white-space: nowrap; }
+.settings-empty { margin: 0 0 14px; padding: 13px; border-radius: 6px; background: #f7f8fb; color: #7b879a; font-size: 10px; }
+.settings-text-link { margin-top: 13px; padding: 0; border: 0; background: transparent; }
+
+.settings-eyebrow { display: block; margin-bottom: 4px; color: #8190a8; font-size: 9px; font-weight: 800; letter-spacing: 0.08em; }
+
+.business-settings-owner-panel {
+  padding: 17px;
+  border: 1px solid #e8ecf3;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(22 37 66 / 3%);
+}
+
+.business-settings-owner-panel > header { margin-bottom: 13px; }
+.business-settings-owner-panel h2 { margin: 0; color: #17243b; font-size: 15px; }
+.business-settings-owner-panel > header p { margin: 4px 0 0; color: #7b879a; font-size: 10px; }
+.settings-role-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.settings-role-grid article { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; padding: 13px; border: 1px solid #e8edf5; border-radius: 7px; background: #f8faff; }
+.settings-role-grid article > span { color: #63738f; font-size: 9px; font-weight: 800; letter-spacing: 0.07em; }
+.settings-role-grid h3 { margin: 6px 0 5px; color: #273650; font-size: 12px; }
+.settings-role-grid p { flex: 1; margin: 0 0 11px; color: #748198; font-size: 9px; line-height: 1.55; }
+.settings-role-grid a { display: inline-flex; align-items: center; gap: 6px; color: #3155a5; font-size: 9px; font-weight: 750; text-decoration: none; }
+.settings-role-grid a:hover { text-decoration: underline; }
+.settings-role-owner { border-top: 3px solid #315dc2 !important; }
+.settings-role-supervisor { border-top: 3px solid #7386c6 !important; }
+.settings-role-staff { border-top: 3px solid #a2aec6 !important; }
+
+@media (max-width: 1000px) {
+  .business-settings-heading { flex-direction: column; }
+  .business-settings-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .business-settings-main-grid { grid-template-columns: 1fr; }
+  .settings-role-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .business-settings-metrics { grid-template-columns: 1fr; }
+  .business-settings-form-footer { align-items: stretch; flex-direction: column; }
+  .business-settings-form-footer button { width: 100%; }
+}

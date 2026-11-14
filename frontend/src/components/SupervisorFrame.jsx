@@ -13,7 +13,7 @@ const navigationByRole = {
     { section: 'KAS & BUKU BESAR', links: [
       ['/wallets', '▤', 'Kas & Rekening'],
       ['/debts', '⇄', 'Utang & Piutang'],
-      ['/reconciliations', '✓', 'Rekonsiliasi & Koreksi'],
+      ['/reconciliations', '✓', 'Rekonsiliasi Kas'],
       ['/reports', '▥', 'Laporan Keuangan'],
     ] },
     { section: 'MANAJEMEN & KONTROL', links: [
@@ -76,11 +76,7 @@ const SupervisorFrame = ({ active, unreadCount = 0, onLogout, children }) => {
   const roleLabel = { owner: 'Owner', supervisor: 'Supervisor', staff: 'Staff' }[role];
   const portalLabel = { owner: 'OWNER PORTAL', supervisor: 'PORTAL PENGAWASAN', staff: 'KEUANGAN UMKM' }[role];
   const navigation = navigationByRole[role] ?? navigationByRole.staff;
-  const actionLabel = {
-    owner: '+ Catat Kas Langsung',
-    supervisor: 'Tinjau Pengajuan',
-    staff: '+ Catat transaksi',
-  }[role];
+  const actionLabel = role === 'supervisor' ? 'Tinjau Pengajuan' : '+ Catat transaksi';
   const actionPath = role === 'supervisor' ? '/requests' : '/transactions';
 
   const handleLogout = async () => {
@@ -98,13 +94,13 @@ const SupervisorFrame = ({ active, unreadCount = 0, onLogout, children }) => {
   };
 
   return (
-    <div className="supervisor-app">
+    <div className={role === 'owner' ? 'supervisor-app owner-workspace' : 'supervisor-app'}>
       <aside className="supervisor-sidebar">
         <Link to="/dashboard" className="supervisor-brand">
           <span className="supervisor-brand-mark">BH</span>
           <span><strong>Bocor Halus</strong><small>{portalLabel}</small></span>
         </Link>
-        <div className="supervisor-business-chip"><i /> {role === 'owner' ? `Usaha · ${user?.name ?? 'Aktif'}` : role === 'supervisor' ? 'Data usaha aktif' : 'Akses staf aktif'}</div>
+        <div className="supervisor-business-chip"><i /><span>{user?.business?.business_name ?? 'Nama usaha belum tersedia'}</span></div>
         <nav className="supervisor-navigation" aria-label={`Navigasi ${roleLabel.toLowerCase()}`}>
           {navigation.map((group) => (
             <div className="supervisor-nav-group" key={group.section}>
@@ -123,7 +119,6 @@ const SupervisorFrame = ({ active, unreadCount = 0, onLogout, children }) => {
             </div>
           ))}
         </nav>
-        <div className="supervisor-sidebar-spacer" />
         <div className="supervisor-authority-note">
           <strong>{role === 'owner' ? 'KONTROL USAHA' : role === 'supervisor' ? 'OTORISASI SUPERVISOR' : 'AKSES STAF'}</strong>
           <span>{role === 'owner'
@@ -144,7 +139,7 @@ const SupervisorFrame = ({ active, unreadCount = 0, onLogout, children }) => {
           <div className="supervisor-topbar-brand"><strong>Bocor Halus</strong><span>{portalLabel} · {role === 'owner' ? 'Manajemen Keuangan Usaha' : role === 'supervisor' ? 'Kontrol & Risk Monitoring' : 'Operasional Keuangan'}</span></div>
           <div className="supervisor-topbar-actions">
             <span className="supervisor-online"><i /> {role === 'supervisor' ? 'Pengawasan aktif' : 'Sesi aktif'}</span>
-            <Link to={actionPath} className="supervisor-action-link">{actionLabel}</Link>
+            {role !== 'owner' && <Link to={actionPath} className="supervisor-action-link">{actionLabel}</Link>}
             <Link to="/notifications" className="supervisor-notification-button" aria-label={`Notifikasi, ${unreadCount} belum dibaca`}>
               ♧{unreadCount > 0 && <b>{unreadCount}</b>}
             </Link>

@@ -41,6 +41,11 @@ class ExpenseRequest extends Model
         return $this->belongsTo(User::class, 'requested_by');
     }
 
+    public function decider(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'decided_by');
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);

@@ -32,6 +32,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [UserController::class, 'profile']);
     Route::patch('/profile', [UserController::class, 'updateProfile']);
+    Route::get('/profile/sessions', [UserController::class, 'sessions']);
+    Route::post('/profile/sessions/revoke-others', [UserController::class, 'revokeOtherSessions']);
+    Route::delete('/profile/sessions/{tokenId}', [UserController::class, 'revokeSession'])->whereNumber('tokenId');
 
     Route::middleware('role:owner')->group(function () {
         Route::apiResource('users', UserController::class)->only(['index', 'store', 'update']);
@@ -44,6 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/categories/{category}', [CategoryController::class, 'update']);
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
         Route::post('/transactions/{transaction}/reverse', [TransactionController::class, 'reverse']);
+        Route::get('/audit-logs/export', [AuditLogController::class, 'export']);
         Route::get('/audit-logs', [AuditLogController::class, 'index']);
         Route::apiResource('monthly-plans', MonthlyPlanController::class)->except(['index', 'show']);
         Route::apiResource('budgets', BudgetController::class)->except(['index', 'show']);

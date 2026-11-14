@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class UserController extends Controller
 {
@@ -29,7 +30,7 @@ class UserController extends Controller
 
     public function profile(Request $request): JsonResponse
     {
-        return response()->json(['data' => $request->user()]);
+        return response()->json(['data' => $request->user()->load('business:id,business_name')]);
     }
 
     public function updateProfile(Request $request): JsonResponse
@@ -56,7 +57,65 @@ class UserController extends Controller
         unset($validated['current_password']);
         $request->user()->update($validated);
 
-        return response()->json(['data' => $request->user()->fresh()]);
+        return response()->json(['data' => $request->user()->fresh()->load('business:id,business_name')]);
+    }
+
+    public function sessions(Request $request): JsonResponse
+    {
+        $currentToken = $this->currentPersonalAccessToken($request);
+        $sessions = $request->user()->tokens()
+            ->latest('last_used_at')
+            ->latest('created_at')
+            ->get(['id', 'name', 'last_used_at', 'created_at', 'expires_at'])
+            ->map(fn (PersonalAccessToken $token): array => [
+                'id' => $token->id,
+                'name' => $token->name,
+                'last_used_at' => $token->last_used_at,
+                'created_at' => $token->created_at,
+                'expires_at' => $token->expires_at,
+                'is_current' => $currentToken !== null && $token->is($currentToken),
+            ]);
+
+        return response()->json([
+            'data' => $sessions,
+            'current_session_available' => $currentToken !== null,
+        ]);
+    }
+
+    public function revokeSession(Request $request, int $tokenId): JsonResponse
+    {
+        $currentToken = $this->currentPersonalAccessToken($request);
+        if ($currentToken === null) {
+            abort(409, 'Sesi saat ini tidak dapat diidentifikasi untuk mengelola sesi lain.');
+        }
+
+        $token = $request->user()->tokens()->findOrFail($tokenId);
+        if ($token->is($currentToken)) {
+            throw ValidationException::withMessages([
+                'session' => ['Sesi yang sedang digunakan tidak dapat dicabut dari daftar ini.'],
+            ]);
+        }
+
+        $token->delete();
+
+        return response()->json(['message' => 'Sesi berhasil dicabut.']);
+    }
+
+    public function revokeOtherSessions(Request $request): JsonResponse
+    {
+        $currentToken = $this->currentPersonalAccessToken($request);
+        if ($currentToken === null) {
+            abort(409, 'Sesi saat ini tidak dapat diidentifikasi untuk mengelola sesi lain.');
+        }
+
+        $revokedCount = $request->user()->tokens()
+            ->whereKeyNot($currentToken->getKey())
+            ->delete();
+
+        return response()->json([
+            'message' => 'Sesi lain berhasil dicabut.',
+            'revoked_count' => $revokedCount,
+        ]);
     }
 
     public function store(Request $request): JsonResponse
@@ -108,5 +167,12 @@ class UserController extends Controller
             'description' => $description,
             'ip_address' => $request->ip(),
         ]);
+    }
+
+    private function currentPersonalAccessToken(Request $request): ?PersonalAccessToken
+    {
+        $token = $request->user()->currentAccessToken();
+
+        return $token instanceof PersonalAccessToken ? $token : null;
     }
 }

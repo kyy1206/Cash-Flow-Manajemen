@@ -21,15 +21,70 @@ class ExpenseRequestController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = ExpenseRequest::query()
-            ->with(['requester:id,name,role', 'category:id,name', 'wallet:id,name', 'transaction'])
-            ->latest();
+        $validated = $request->validate([
+            'status' => ['sometimes', 'in:pending,approved,rejected,paid'],
+            'category_id' => ['sometimes', 'integer'],
+            'wallet_id' => ['sometimes', 'integer'],
+            'amount_min' => ['sometimes', 'numeric', 'min:0'],
+            'amount_max' => ['sometimes', 'numeric', 'min:0', 'gte:amount_min'],
+            'date_from' => ['sometimes', 'date_format:Y-m-d'],
+            'date_to' => ['sometimes', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+            'search' => ['sometimes', 'string', 'max:255'],
+        ]);
 
-        if ($request->user()->isRole('staff')) {
-            $query->where('requested_by', $request->user()->id);
-        }
+        $baseQuery = ExpenseRequest::query()
+            ->with([
+                'requester:id,name,role',
+                'decider:id,name,role',
+                'category:id,name',
+                'wallet:id,name',
+                'transaction',
+            ])
+            ->when(
+                $request->user()->isRole('staff'),
+                fn ($query) => $query->where('requested_by', $request->user()->id),
+            )
+            ->when(isset($validated['category_id']), fn ($query) => $query->where('category_id', $validated['category_id']))
+            ->when(isset($validated['wallet_id']), fn ($query) => $query->where('wallet_id', $validated['wallet_id']))
+            ->when(isset($validated['amount_min']), fn ($query) => $query->where('amount', '>=', $validated['amount_min']))
+            ->when(isset($validated['amount_max']), fn ($query) => $query->where('amount', '<=', $validated['amount_max']))
+            ->when(isset($validated['date_from']), fn ($query) => $query->whereDate('created_at', '>=', $validated['date_from']))
+            ->when(isset($validated['date_to']), fn ($query) => $query->whereDate('created_at', '<=', $validated['date_to']))
+            ->when(isset($validated['search']), function ($query) use ($validated): void {
+                $search = trim($validated['search']);
+                $query->where(function ($query) use ($search): void {
+                    $query->where('purpose', 'like', '%'.$search.'%')
+                        ->orWhere('description', 'like', '%'.$search.'%')
+                        ->orWhereHas('requester', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$search.'%'))
+                        ->orWhereHas('category', fn ($categoryQuery) => $categoryQuery->where('name', 'like', '%'.$search.'%'))
+                        ->orWhereHas('wallet', fn ($walletQuery) => $walletQuery->where('name', 'like', '%'.$search.'%'));
 
-        return response()->json(['data' => $query->paginate(20)]);
+                    if (preg_match('/^(?:#?REQ-)?0*(\d+)$/i', $search, $matches) === 1) {
+                        $query->orWhereKey((int) $matches[1]);
+                    }
+                });
+            });
+
+        $summary = [
+            'total_count' => (clone $baseQuery)->count(),
+            'total_amount' => (clone $baseQuery)->sum('amount'),
+            'pending_count' => (clone $baseQuery)->where('status', 'pending')->count(),
+            'pending_amount' => (clone $baseQuery)->where('status', 'pending')->sum('amount'),
+            'approved_count' => (clone $baseQuery)->where('status', 'approved')->count(),
+            'approved_amount' => (clone $baseQuery)->where('status', 'approved')->sum('amount'),
+            'rejected_count' => (clone $baseQuery)->where('status', 'rejected')->count(),
+            'rejected_amount' => (clone $baseQuery)->where('status', 'rejected')->sum('amount'),
+            'paid_count' => (clone $baseQuery)->where('status', 'paid')->count(),
+            'paid_amount' => (clone $baseQuery)->where('status', 'paid')->sum('amount'),
+        ];
+
+        $requests = (clone $baseQuery)
+            ->when(isset($validated['status']), fn ($query) => $query->where('status', $validated['status']))
+            ->latest()
+            ->latest('id')
+            ->paginate(20);
+
+        return response()->json(['data' => $requests, 'summary' => $summary]);
     }
 
     public function store(Request $request): JsonResponse

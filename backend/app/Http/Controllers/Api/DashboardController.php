@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Debt;
 use App\Models\ExpenseRequest;
 use App\Models\MonthlyPlan;
 use App\Models\Transaction;
@@ -121,6 +122,43 @@ class DashboardController extends Controller
                 'date' => CarbonImmutable::parse($row->date)->toDateString(),
                 'amount' => (float) $row->total,
             ]);
+        $dailyCashFlow = (clone $transactions)->whereIn('transaction_type', ['income', 'expense'])
+            ->selectRaw("date, SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) as income, SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END) as expense")
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->map(fn ($row): array => [
+                'date' => CarbonImmutable::parse($row->date)->toDateString(),
+                'income' => (float) $row->income,
+                'expense' => (float) $row->expense,
+            ]);
+        $obligationPeriod = [
+            $today->toDateString(),
+            CarbonImmutable::parse($today)->addDays(14)->toDateString(),
+        ];
+        $upcomingObligationsQuery = Debt::query()
+            ->where('status', 'open')
+            ->whereNotNull('due_date')
+            ->whereBetween('due_date', $obligationPeriod)
+            ->when(
+                $request->user()->isRole('staff'),
+                fn (Builder $query) => $query->where('created_by', $request->user()->id),
+            );
+        $receivableDue = (float) (clone $upcomingObligationsQuery)->where('type', 'receivable')->sum('remaining_amount');
+        $payableDue = (float) (clone $upcomingObligationsQuery)->where('type', 'payable')->sum('remaining_amount');
+        $upcomingObligations = (clone $upcomingObligationsQuery)
+            ->orderBy('due_date')
+            ->orderBy('id')
+            ->limit(5)
+            ->get(['id', 'type', 'counterparty', 'remaining_amount', 'due_date'])
+            ->map(fn (Debt $debt): array => [
+                'id' => $debt->id,
+                'type' => $debt->type,
+                'counterparty' => $debt->counterparty,
+                'remaining_amount' => (float) $debt->remaining_amount,
+                'due_date' => $debt->due_date?->toDateString(),
+            ]);
+        $upcomingObligationsCount = (clone $upcomingObligationsQuery)->count();
 
         return response()->json([
             'data' => [
@@ -157,6 +195,14 @@ class DashboardController extends Controller
                 'recent_transactions' => $recentTransactions,
                 'pending_requests_preview' => $pendingRequestsPreview,
                 'daily_spending' => $dailyExpense,
+                'daily_cash_flow' => $dailyCashFlow,
+                'upcoming_obligations' => [
+                    'count' => $upcomingObligationsCount,
+                    'receivable_total' => $receivableDue,
+                    'payable_total' => $payableDue,
+                    'net_total' => $receivableDue - $payableDue,
+                    'items' => $upcomingObligations,
+                ],
             ],
         ]);
     }

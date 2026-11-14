@@ -14,10 +14,11 @@ class TransactionControllerTest extends TestCase
 
     public function test_transaction_is_created_for_the_authenticated_user(): void
     {
-        $user = User::factory()->create();
-        $category = $user->categories()->create(['name' => 'Makan']);
-        $wallet = Wallet::create(['created_by' => $user->id, 'name' => 'Kas', 'type' => 'cash', 'opening_balance' => 100000]);
-        $plan = $user->monthlyPlans()->create([
+        $owner = User::factory()->create(['role' => 'owner']);
+        $user = User::factory()->create(['role' => 'supervisor']);
+        $category = $owner->categories()->create(['name' => 'Makan']);
+        $wallet = Wallet::create(['created_by' => $owner->id, 'name' => 'Kas', 'type' => 'cash', 'opening_balance' => 100000]);
+        $plan = $owner->monthlyPlans()->create([
             'month' => 10,
             'year' => 2026,
             'total_budget' => 100000,
@@ -49,9 +50,17 @@ class TransactionControllerTest extends TestCase
         ]);
     }
 
+    public function test_owner_cannot_record_a_transaction_directly(): void
+    {
+        Sanctum::actingAs(User::factory()->create(['role' => 'owner']));
+
+        $this->postJson('/api/transactions', [])->assertForbidden();
+        $this->assertDatabaseCount('transactions', 0);
+    }
+
     public function test_ocr_transactions_keep_their_recording_source(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'staff']);
         $category = $user->categories()->create(['name' => 'Lainnya']);
         $wallet = Wallet::create(['created_by' => $user->id, 'name' => 'Kas', 'type' => 'cash', 'opening_balance' => 0]);
         Sanctum::actingAs($user);
@@ -104,16 +113,17 @@ class TransactionControllerTest extends TestCase
 
     public function test_transaction_date_must_match_the_selected_budget_period(): void
     {
-        $user = User::factory()->create();
-        $category = $user->categories()->create(['name' => 'Makan']);
-        $wallet = Wallet::create(['created_by' => $user->id, 'name' => 'Kas', 'type' => 'cash', 'opening_balance' => 0]);
-        $plan = $user->monthlyPlans()->create([
+        $owner = User::factory()->create(['role' => 'owner']);
+        $supervisor = User::factory()->create(['role' => 'supervisor']);
+        $category = $owner->categories()->create(['name' => 'Makan']);
+        $wallet = Wallet::create(['created_by' => $owner->id, 'name' => 'Kas', 'type' => 'cash', 'opening_balance' => 0]);
+        $plan = $owner->monthlyPlans()->create([
             'month' => 10,
             'year' => 2026,
             'total_budget' => 100000,
         ]);
         $budget = $plan->budgets()->create(['category_id' => $category->id, 'amount' => 100000]);
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($supervisor);
 
         $this->postJson('/api/transactions', [
             'transaction_type' => 'expense',
@@ -216,9 +226,85 @@ class TransactionControllerTest extends TestCase
             ->assertJsonPath('data.data.0.category.name', 'Makan');
     }
 
-    public function test_transaction_amount_rejects_more_than_two_decimal_places(): void
+    public function test_transaction_list_returns_unpaginated_type_totals_and_filters_correction_history(): void
     {
         $user = User::factory()->create();
+        $income = $user->transactions()->create([
+            'amount' => 100000,
+            'date' => '2026-10-16',
+            'transaction_type' => 'income',
+            'financial_status' => 'posted',
+            'status' => 'completed',
+        ]);
+        $user->transactions()->create([
+            'amount' => 100000,
+            'date' => '2026-10-17',
+            'transaction_type' => 'expense',
+            'financial_status' => 'posted',
+            'status' => 'completed',
+            'reversal_of_id' => $income->id,
+        ]);
+        $user->transactions()->create([
+            'amount' => 25000,
+            'date' => '2026-10-18',
+            'transaction_type' => 'expense',
+            'financial_status' => 'posted',
+            'status' => 'completed',
+        ]);
+        $user->transactions()->create([
+            'amount' => 50000,
+            'date' => '2026-10-19',
+            'transaction_type' => 'transfer',
+            'financial_status' => 'posted',
+            'status' => 'completed',
+        ]);
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/transactions?transaction_type=income')
+            ->assertOk()
+            ->assertJsonPath('data.total', 1)
+            ->assertJsonPath('summary.total_count', 4)
+            ->assertJsonPath('summary.income_count', 1)
+            ->assertJsonPath('summary.expense_count', 2)
+            ->assertJsonPath('summary.transfer_count', 1)
+            ->assertJsonPath('summary.income_total', 100000)
+            ->assertJsonPath('summary.expense_total', 125000)
+            ->assertJsonPath('summary.transfer_total', 50000)
+            ->assertJsonPath('summary.attention_count', 2);
+
+        $this->getJson('/api/transactions?attention=1')
+            ->assertOk()
+            ->assertJsonPath('data.total', 2);
+
+        $reference = 'TRX-'.str_pad((string) $income->id, 8, '0', STR_PAD_LEFT);
+        $this->getJson('/api/transactions?search='.$reference)
+            ->assertOk()
+            ->assertJsonPath('data.total', 1)
+            ->assertJsonPath('data.data.0.id', $income->id);
+    }
+
+    public function test_transaction_search_matches_the_recording_users_name(): void
+    {
+        $cashier = User::factory()->create(['name' => 'Rani Kasir', 'role' => 'staff']);
+        $supervisor = User::factory()->create(['role' => 'supervisor']);
+        $transaction = $cashier->transactions()->create([
+            'amount' => 25000,
+            'date' => '2026-10-16',
+            'transaction_type' => 'expense',
+            'financial_status' => 'posted',
+            'status' => 'completed',
+        ]);
+        Sanctum::actingAs($supervisor);
+
+        $this->getJson('/api/transactions?search=Rani')
+            ->assertOk()
+            ->assertJsonPath('data.total', 1)
+            ->assertJsonPath('data.data.0.id', $transaction->id);
+    }
+
+    public function test_transaction_amount_rejects_more_than_two_decimal_places(): void
+    {
+        $user = User::factory()->create(['role' => 'staff']);
         Sanctum::actingAs($user);
 
         $this->postJson('/api/transactions', [

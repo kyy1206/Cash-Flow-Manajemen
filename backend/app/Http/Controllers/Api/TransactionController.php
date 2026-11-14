@@ -27,9 +27,10 @@ class TransactionController extends Controller
             'category_id' => ['sometimes', 'integer'],
             'wallet_id' => ['sometimes', 'integer'],
             'search' => ['sometimes', 'string', 'max:255'],
+            'attention' => ['sometimes', 'boolean'],
         ]);
 
-        $transactions = Transaction::query()
+        $baseQuery = Transaction::query()
             ->with(['user:id,name,role', 'category:id,name,type', 'wallet:id,name', 'destinationWallet:id,name', 'reversal:id,reversal_of_id'])
             ->where('financial_status', 'posted')
             ->when(
@@ -38,25 +39,55 @@ class TransactionController extends Controller
             )
             ->when(isset($validated['date_from']), fn (Builder $query) => $query->whereDate('date', '>=', $validated['date_from']))
             ->when(isset($validated['date_to']), fn (Builder $query) => $query->whereDate('date', '<=', $validated['date_to']))
-            ->when(isset($validated['transaction_type']), fn (Builder $query) => $query->where('transaction_type', $validated['transaction_type']))
             ->when(isset($validated['category_id']), fn (Builder $query) => $query->where('category_id', $validated['category_id']))
             ->when(isset($validated['wallet_id']), fn (Builder $query) => $query->where(function (Builder $query) use ($validated): void {
                 $query->where('wallet_id', $validated['wallet_id'])
                     ->orWhere('destination_wallet_id', $validated['wallet_id']);
             }))
             ->when(isset($validated['search']), fn (Builder $query) => $query->where(function (Builder $query) use ($validated): void {
-                $query->where('description', 'like', '%'.$validated['search'].'%')
-                    ->orWhere('merchant', 'like', '%'.$validated['search'].'%');
+                $search = trim($validated['search']);
+                $query->where('description', 'like', '%'.$search.'%')
+                    ->orWhere('merchant', 'like', '%'.$search.'%')
+                    ->orWhereHas('user', fn (Builder $userQuery) => $userQuery->where('name', 'like', '%'.$search.'%'))
+                    ->orWhereHas('category', fn (Builder $categoryQuery) => $categoryQuery->where('name', 'like', '%'.$search.'%'))
+                    ->orWhereHas('wallet', fn (Builder $walletQuery) => $walletQuery->where('name', 'like', '%'.$search.'%'))
+                    ->orWhereHas('destinationWallet', fn (Builder $walletQuery) => $walletQuery->where('name', 'like', '%'.$search.'%'));
+
+                if (preg_match('/^(?:#?TRX-)?(\d+)$/i', $search, $matches) === 1) {
+                    $query->orWhereKey((int) $matches[1]);
+                }
+            }));
+
+        $summary = [
+            'total_count' => (clone $baseQuery)->count(),
+            'income_count' => (clone $baseQuery)->where('transaction_type', 'income')->count(),
+            'expense_count' => (clone $baseQuery)->where('transaction_type', 'expense')->count(),
+            'transfer_count' => (clone $baseQuery)->where('transaction_type', 'transfer')->count(),
+            'income_total' => (clone $baseQuery)->where('transaction_type', 'income')->sum('amount'),
+            'expense_total' => (clone $baseQuery)->where('transaction_type', 'expense')->sum('amount'),
+            'transfer_total' => (clone $baseQuery)->where('transaction_type', 'transfer')->sum('amount'),
+            'attention_count' => (clone $baseQuery)->where(function (Builder $query): void {
+                $query->whereNotNull('reversal_of_id')->orWhereHas('reversal');
+            })->count(),
+        ];
+
+        $transactionsQuery = clone $baseQuery;
+        $transactions = $transactionsQuery
+            ->when(isset($validated['transaction_type']), fn (Builder $query) => $query->where('transaction_type', $validated['transaction_type']))
+            ->when(($validated['attention'] ?? false), fn (Builder $query) => $query->where(function (Builder $query): void {
+                $query->whereNotNull('reversal_of_id')->orWhereHas('reversal');
             }))
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->paginate(20);
 
-        return response()->json(['data' => $transactions]);
+        return response()->json(['data' => $transactions, 'summary' => $summary]);
     }
 
     public function store(Request $request): JsonResponse
     {
+        abort_if($request->user()->isRole('owner'), 403, 'Owner hanya dapat memantau dan mengoreksi transaksi.');
+
         $validated = $request->validate([
             'transaction_type' => ['required', 'in:income,expense,transfer'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],

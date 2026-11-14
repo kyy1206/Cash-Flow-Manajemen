@@ -69,7 +69,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Owner dan usaha berhasil disiapkan.',
-            'user' => $user,
+            'user' => $user->load('business:id,business_name'),
             'token' => $user->createToken('bocor-halus')->plainTextToken,
         ], 201);
     }
@@ -93,7 +93,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Login berhasil.',
-            'user' => $user,
+            'user' => $user->load('business:id,business_name'),
             'token' => $token,
         ]);
     }

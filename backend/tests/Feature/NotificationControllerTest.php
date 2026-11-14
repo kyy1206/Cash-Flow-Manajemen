@@ -15,7 +15,7 @@ class NotificationControllerTest extends TestCase
     public function test_spending_thresholds_create_deduplicated_budget_notifications(): void
     {
         $this->travelTo('2026-10-17 10:00:00');
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'owner']);
         $category = $user->categories()->create(['name' => 'Makan']);
         $wallet = Wallet::create(['created_by' => $user->id, 'name' => 'Kas', 'type' => 'cash', 'opening_balance' => 0]);
         $plan = $user->monthlyPlans()->create([
@@ -24,7 +24,7 @@ class NotificationControllerTest extends TestCase
             'total_budget' => 100000,
         ]);
         $budget = $plan->budgets()->create(['category_id' => $category->id, 'amount' => 50000]);
-        Sanctum::actingAs($user);
+        Sanctum::actingAs(User::factory()->create(['role' => 'supervisor']));
 
         $this->postJson('/api/transactions', [
             'transaction_type' => 'expense',
@@ -101,6 +101,55 @@ class NotificationControllerTest extends TestCase
 
         $this->postJson("/api/notifications/{$notification->id}/read")->assertNotFound();
         $this->assertNull($notification->fresh()->read_at);
+    }
+
+    public function test_notification_feed_can_filter_owned_records_and_returns_unfiltered_summary(): void
+    {
+        $user = User::factory()->create(['role' => 'owner']);
+        $otherUser = User::factory()->create();
+        $user->notifications()->create([
+            'type' => 'budget_warning',
+            'message' => 'Anggaran mendekati batas',
+        ]);
+        $user->notifications()->create([
+            'type' => 'budget_critical',
+            'message' => 'Anggaran kritis',
+        ]);
+        $user->notifications()->create([
+            'type' => 'subscription_due',
+            'message' => 'Internet jatuh tempo',
+        ]);
+        $user->notifications()->create([
+            'type' => 'budget_overbudget',
+            'message' => 'Anggaran melewati batas',
+            'read_at' => now(),
+        ]);
+        $otherUser->notifications()->create([
+            'type' => 'budget_warning',
+            'message' => 'Anggaran milik pengguna lain',
+        ]);
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/notifications?category=budget&status=unread&search=Anggaran')->assertOk()
+            ->assertJsonCount(2, 'data.data')
+            ->assertJsonPath('data.total', 2)
+            ->assertJsonPath('unread_count', 3)
+            ->assertJsonPath('summary.total', 4)
+            ->assertJsonPath('summary.budget_count', 3)
+            ->assertJsonPath('summary.subscription_count', 1);
+
+        $this->getJson('/api/notifications?status=read')->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.type', 'budget_overbudget');
+    }
+
+    public function test_notification_feed_rejects_unknown_filter_values(): void
+    {
+        Sanctum::actingAs(User::factory()->create(['role' => 'owner']));
+
+        $this->getJson('/api/notifications?category=fraud&status=resolved')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['category', 'status']);
     }
 
     public function test_mark_all_notifications_as_read_only_updates_authenticated_users_rows(): void
